@@ -1,0 +1,239 @@
+.container {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  flex-direction: column;
+  background-color: #f8f8f8; /* bg-gray-50 */
+  overflow-x: hidden;
+}
+
+.layoutContainer {
+  display: flex;
+  height: 100%;
+  flex-grow: 1;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  white-space: nowrap;
+  border-bottom: 1px solid #e9edf1; /* border-b border-solid border-b-[#e9edf1] */
+  padding: 12px 40px; /* px-10 py-3 (px-40px, py-12px) */
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px; /* gap-4 */
+  color: #101419; /* text-[#101419] */
+}
+
+.headerLogoWrapper {
+  width: 16px; /* size-4 */
+  height: 16px; /* size-4 */
+}
+
+.chargeBuddyLogo {
+  width: 100%;
+  height: 100%;
+}
+
+.headerTitle {
+  color: #101419; /* text-[#101419] */
+  font-size: 18px; /* text-lg */
+  font-weight: 700; /* font-bold */
+  line-height: 28px; /* leading-tight */
+  letter-spacing: -0.015em; /* tracking-[-0.015em] */
+}
+
+.headerRight {
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
+  gap: 32px; /* gap-8 */
+}
+
+.headerNav {
+  display: flex;
+  align-items: center;
+  gap: 36px; /* gap-9 */
+}
+
+.navLink {
+  color: #101419; /* text-[#101419] */
+  font-size: 14px; /* text-sm */
+  font-weight: 500; /* font-medium */
+  line-height: 20px; /* leading-normal */
+  text-decoration: none; /* Add this if you want to remove default underline */
+}
+
+.notificationButton {
+  display: flex;
+  max-width: 480px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 9999px; /* rounded-full */
+  height: 40px; /* h-10 */
+  background-color: #e9edf1; /* bg-[#e9edf1] */
+  color: #101419; /* text-[#101419] */
+  gap: 8px; /* gap-2 */
+  font-size: 14px; /* text-sm */
+  font-weight: 700; /* font-bold */
+  line-height: 20px; /* leading-normal */
+  letter-spacing: 0.015em; /* tracking-[0.015em] */
+  min-width: 0; /* min-w-0 */
+  padding: 0 10px; /* px-2.5 (px-10px) */
+  border: none; /* Add this to remove default button border */
+}
+
+.bellIconWrapper {
+  color: #101419; /* text-[#101419] */
+  /* SVG size is controlled by the SVG's width/height attributes in JSX */
+}
+
+.profileImage {
+  background-position: center; /* bg-center */
+  background-repeat: no-repeat; /* bg-no-repeat */
+  aspect-ratio: 1 / 1; /* aspect-square */
+  background-size: cover; /* bg-cover */
+  border-radius: 9999px; /* rounded-full */
+  width: 40px; /* size-10 */
+  height: 40px; /* size-10 */
+}
+
+.mainContentArea {
+  padding: 20px 160px; /* px-40 py-5 (px-160px, py-20px) */
+  display: flex;
+  flex: 1;
+  justify-content: center;
+}
+
+.contentContainer {
+  display: flex;
+  flex-direction: column;
+  max-width: 960px; /* max-w-[960px] */
+  flex: 1;
+}
+
+.pageTitleWrapper {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px; /* gap-3 */
+  padding: 16px; /* p-4 */
+}
+
+.pageTitle {
+  color: #101419; /* text-[#101419] */
+  letter-spacing: -0.025em; /* tracking-light */
+  font-size: 32px; /* text-[32px] */
+  font-weight: 700; /* font-bold */
+  line-height: 40px; /* leading-tight */
+  min-width: 288px; /* min-w-72 */
+}
+
+.sectionTitle {
+  color: #101419; /* text-[#101419] */
+  font-size: 18px; /* text-lg */
+  font-weight: 700; /* font-bold */
+  line-height: 28px; /* leading-tight */
+  letter-spacing: -0.015em; /* tracking-[-0.015em] */
+  padding: 16px 16px 8px; /* px-4 pb-2 pt-4 (px-16px, pb-8px, pt-16px) */
+}
+
+.inputGroup {
+  display: flex;
+  max-width: 480px; /* max-w-[480px] */
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px; /* gap-4 */
+  padding: 12px 16px; /* px-4 py-3 (px-16px, py-12px) */
+}
+
+.inputLabelWrapper {
+  display: flex;
+  flex-direction: column;
+  min-width: 160px; /* min-w-40 */
+  flex: 1;
+}
+
+.inputLabel {
+  color: #101419; /* text-[#101419] */
+  font-size: 16px; /* text-base */
+  font-weight: 500; /* font-medium */
+  line-height: 24px; /* leading-normal */
+  padding-bottom: 8px; /* pb-2 */
+}
+
+.formInput,
+.formSelect {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+  resize: none;
+  overflow: hidden;
+  border-radius: 12px; /* rounded-xl */
+  color: #101419; /* text-[#101419] */
+  outline: 0; /* focus:outline-0 */
+  box-shadow: none; /* focus:ring-0 */
+  border: 1px solid #d3dbe4; /* border border-[#d3dbe4] */
+  background-color: #f8f8f8; /* bg-gray-50 */
+  height: 56px; /* h-14 */
+  padding: 15px; /* p-[15px] */
+  font-size: 16px; /* text-base */
+  font-weight: 400; /* font-normal */
+  line-height: 24px; /* leading-normal */
+}
+
+.formInput::placeholder,
+.formSelect::placeholder {
+  color: #58728d; /* placeholder:text-[#58728d] */
+}
+
+.formSelect {
+  /* bg-[image:var(--select-button-svg)]를 CSS 변수를 통해 적용 */
+  background-image: var(--select-button-svg);
+  background-repeat: no-repeat;
+  background-position: right 15px center; /* 대략적인 위치 */
+  background-size: 24px; /* SVG 아이콘 크기에 맞춰 조정 */
+  -webkit-appearance: none; /* 기본 드롭다운 화살표 제거 (크롬) */
+  -moz-appearance: none; /* 기본 드롭다운 화살표 제거 (파이어폭스) */
+  appearance: none; /* 기본 드롭다운 화살표 제거 (모든 브라우저) */
+  padding-right: 40px; /* 화살표 공간 확보 */
+}
+
+.submitButtonWrapper {
+  display: flex;
+  padding: 12px 16px; /* px-4 py-3 */
+  justify-content: flex-end;
+}
+
+.submitButton {
+  display: flex;
+  min-width: 84px;
+  max-width: 480px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 9999px; /* rounded-full */
+  height: 40px; /* h-10 */
+  padding: 0 16px; /* px-4 */
+  background-color: #357dc9; /* bg-[#357dc9] */
+  color: #ffffff; /* text-gray-50 (흰색) */
+  font-size: 14px; /* text-sm */
+  font-weight: 700; /* font-bold */
+  line-height: 20px; /* leading-normal */
+  letter-spacing: 0.015em; /* tracking-[0.015em] */
+  border: none; /* Remove default button border */
+}
+
+.submitButtonText {
+  white-space: nowrap; /* truncate */
+}

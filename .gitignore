@@ -1,0 +1,43 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/
+
+# build outputs
+build/
+dist/
+out/
+.next/ # Next.js projects
+.parcel-cache/ # Parcel bundler
+
+# development environment specific
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDEs and OS specific files
+.idea/
+.vscode/*
+!.vscode/settings.json # VS Code settings, keep if you want to share specific settings
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+*.iml
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# logs
+*.log
+
+# test coverage
+coverage/
+
+# misc
+.eslintcache
+.nyc_output/

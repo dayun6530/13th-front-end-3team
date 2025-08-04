@@ -1,0 +1,545 @@
+.myPageContainer {
+  align-items: flex-start;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  min-height: 800px;
+  position: relative;
+}
+
+.contentWrapper {
+  align-items: flex-start;
+  align-self: stretch;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+}
+
+.header {
+  align-items: center;
+  align-self: stretch;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+  border-color: #e5e8ea;
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: space-between;
+  padding: 12px 40px;
+  position: relative;
+  width: 100%;
+}
+
+.logoContainer {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 16px;
+  position: relative;
+}
+
+.logoTextWrapper {
+  align-items: flex-start;
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  position: relative;
+}
+
+.logoText {
+  align-self: stretch;
+  color: #111416;
+  font-family: "Space Grotesk-Bold", Helvetica;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 23px;
+  margin-top: -1px;
+  position: relative;
+  white-space: nowrap;
+}
+
+.navigation {
+  /* 이 클래스는 더 이상 사용되지 않으므로 제거하거나 주석 처리할 수 있습니다. */
+  align-items: flex-start;
+  display: flex;
+  flex: 1;
+  flex-grow: 1;
+  gap: 32px;
+  justify-content: flex-end;
+  position: relative;
+}
+
+.navLinkWrapper {
+  /* 이 클래스도 더 이상 사용되지 않습니다. */
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 36px;
+  height: 40px;
+  position: relative;
+}
+
+.navLinkText {
+  /* 이 클래스도 더 이상 사용되지 않습니다. */
+  align-self: stretch;
+  color: #0c141c;
+  font-family: "Public Sans-Medium", Helvetica;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 21px;
+  margin-top: -1px;
+  position: relative;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+/* 홈 버튼을 위한 새로운 스타일 추가 */
+.homeButtonContainer {
+  position: absolute; /* 절대 위치로 배치 */
+  right: 16px; /* userInfoCard의 오른쪽에서 16px 떨어짐 */
+  top: 16px; /* userInfoCard의 상단에서 16px 떨어짐 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e8edf4; /* 버튼 배경색 */
+  border-radius: 20px; /* 둥근 모서리 */
+  height: 40px;
+  padding: 0 10px;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); /* 그림자 추가 (선택 사항) */
+}
+
+.homeButtonText {
+  color: #0c141c;
+  font-family: "Public Sans-Medium", Helvetica;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 21px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.notificationButtonWrapper {
+  align-items: center;
+  background-color: #e8edf4;
+  border-radius: 20px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  height: 40px;
+  justify-content: center;
+  max-width: 480px;
+  overflow: hidden;
+  padding: 0px 10px;
+  position: relative;
+}
+
+.notificationIconContainer {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  flex-grow: 1;
+  position: relative;
+}
+
+.notificationVectorWrapper {
+  align-self: stretch;
+  flex: 1;
+  flex-grow: 1;
+  position: relative;
+  width: 100%;
+}
+
+.notificationVector {
+  height: 16px;
+  left: 3px;
+  position: absolute;
+  top: 2px;
+  width: 15px;
+}
+
+.profileSectionWrapper {
+  align-items: flex-start;
+  align-self: stretch;
+  display: flex;
+  flex: 1;
+  flex-grow: 1;
+  justify-content: center;
+  padding: 20px 160px;
+  position: relative;
+  width: 100%;
+}
+
+.profileContentArea {
+  align-items: flex-start;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  flex-grow: 1;
+  max-width: 960px;
+  position: relative;
+}
+
+.profileHeaderWrapper {
+  align-items: flex-start;
+  align-self: stretch;
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 12px 12px;
+  justify-content: space-around;
+  padding: 16px;
+  position: relative;
+  width: 100%;
+}
+
+.profileTitleContainer {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 288px;
+}
+
+.profileTitle {
+  align-self: stretch;
+  color: #0c141c;
+  font-family: "Public Sans-Bold", Helvetica;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 40px;
+  margin-top: -1px;
+  position: relative;
+}
+
+.summarySectionTitleWrapper {
+  align-items: flex-start;
+  align-self: stretch;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  padding: 20px 16px 12px;
+  position: relative;
+  width: 100%;
+}
+
+.summarySectionTitle {
+  align-self: stretch;
+  color: #0c141c;
+  font-family: "Public Sans-Bold", Helvetica;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 28px;
+  margin-top: -1px;
+  position: relative;
+}
+
+.userInfoCard {
+  align-items: center;
+  align-self: stretch;
+  background-color: #ffffff;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 16px;
+  min-height: 72px;
+  padding: 8px 16px;
+  position: relative; /* 자식 요소의 absolute 위치를 위해 relative 설정 */
+  width: 100%;
+}
+
+.profileImagePlaceholder {
+  background-image: url(../../assets/images/depth-5-frame-0.png); /* 배경 이미지 경로 수정 */
+  background-position: 50% 50%;
+  background-size: cover;
+  border-radius: 28px;
+  height: 56px;
+  position: relative;
+  width: 56px;
+}
+
+.userInfoDetails {
+  align-items: flex-start;
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+
+.registrationDateWrapper {
+  align-items: flex-start;
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  position: relative;
+}
+
+.registrationDateText {
+  align-self: stretch;
+  color: #49729b;
+  font-family: "Public Sans-Regular", Helvetica;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 21px;
+  margin-top: -1px;
+  position: relative;
+}
+
+.statsGrid {
+  align-items: flex-start;
+  align-self: stretch;
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 12px 12px;
+  padding: 12px 16px;
+  position: relative;
+  width: 100%;
+}
+
+.statItem {
+  align-items: flex-start;
+  border: 1px solid;
+  border-color: #cedbe8;
+  border-radius: 8px;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 8px;
+  min-width: 111px;
+  padding: 12px;
+  position: relative;
+}
+
+.statValueWrapper {
+  align-items: flex-start;
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  position: relative;
+}
+
+.statValue {
+  align-self: stretch;
+  color: #0c141c;
+  font-family: "Public Sans-Bold", Helvetica;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 30px;
+  margin-top: -1px;
+  position: relative;
+  white-space: nowrap;
+}
+
+.statLabelContainer {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  position: relative;
+}
+
+.statLabelWrapper {
+  align-items: flex-start;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  flex-grow: 1;
+  position: relative;
+}
+
+.statLabel {
+  align-self: stretch;
+  color: #0c141c;
+  font-family: "Public Sans-Medium", Helvetica;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 24px;
+  margin-top: -1px;
+  position: relative;
+  white-space: nowrap;
+}
+
+.vehicleNumberWrapper {
+  align-items: flex-start;
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  position: relative;
+}
+
+.vehicleNumberText {
+  align-self: stretch;
+  color: #0c141c;
+  font-family: "Public Sans-Medium", Helvetica;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 24px;
+  margin-top: -1px;
+  position: relative;
+  white-space: nowrap;
+}
+
+.vehicleModelWrapper {
+  align-items: flex-start;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  position: relative;
+  width: 202px;
+}
+
+.vehicleModelText {
+  align-self: stretch;
+  color: #49729b;
+  font-family: "Public Sans-Regular", Helvetica;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 21px;
+  margin-top: -1px;
+  position: relative;
+}
+
+.chargeHistoryItem {
+  align-items: flex-start;
+  align-self: stretch;
+  background-color: #eff5fc;
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: space-between;
+  padding: 12px 16px;
+  position: relative;
+  width: 100%;
+}
+
+.chargeDetails {
+  align-items: flex-start;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  flex-grow: 1;
+  justify-content: center;
+  position: relative;
+}
+
+.chargeDateWrapper {
+  align-items: flex-start;
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  position: relative;
+}
+
+.chargeDateText {
+  align-self: stretch;
+  color: #0c141c;
+  font-family: "Public Sans-Medium", Helvetica;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 24px;
+  margin-top: -1px;
+  position: relative;
+}
+
+.reviewStatusWrapper {
+  align-items: flex-start;
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  position: relative;
+}
+
+.reviewStatusText {
+  align-self: stretch;
+  color: #49729b;
+  font-family: "Public Sans-Regular", Helvetica;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 21px;
+  margin-top: -1px;
+  position: relative;
+}
+
+.chargeStationInfoWrapper {
+  align-items: flex-start;
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  position: relative;
+}
+
+.chargeStationInfoText {
+  align-self: stretch;
+  color: #49729b;
+  font-family: "Public Sans-Regular", Helvetica;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 21px;
+  margin-top: -1px;
+  position: relative;
+}
+
+.reviewActionButtonContainer {
+  align-items: flex-start;
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  height: 66px;
+  position: relative;
+}
+
+.reviewActionButtonWrapper {
+  align-items: center;
+  background-color: #baf0de;
+  border-radius: 16px;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  max-width: 480px;
+  min-width: 84px;
+  overflow: hidden;
+  padding: 0px 16px;
+  position: relative;
+}
+
+.reviewButtonTextWrapper {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  position: relative;
+}
+
+.reviewButtonText {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  align-self: stretch;
+  color: #0c141c;
+  display: -webkit-box;
+  font-family: "Public Sans-Medium", Helvetica;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 21px;
+  margin-top: -1px;
+  overflow: hidden;
+  position: relative;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
