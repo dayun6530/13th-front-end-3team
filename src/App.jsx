@@ -1,12 +1,13 @@
+// src/App.jsx
+
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { HomePage } from "./pages/Home/Home";
 import { MyPage } from "./pages/MyPage/MyPage";
 import { ReviewPage } from "./pages/Review/Review";
-import { MapPage } from "./pages/Map/Map";
+import { MapPage } from "./pages/Map/MapPage";
 import { VehicleRegistrationForm } from "./pages/VehicleRegistration/VehicleRegistrationForm";
-import "./components/GlobalStyles/GlobalStyles.css"; // 전역 스타일 임포트
-
+import "./components/GlobalStyles/GlobalStyles.css";
 function App() {
   return (
     <Router>
@@ -15,12 +16,7 @@ function App() {
         <Route path="/mypage" element={<MyPage />} />
         <Route path="/review" element={<ReviewPage />} />
         <Route path="/map" element={<MapPage />} />
-        <Route
-          path="/register-vehicle"
-          element={<VehicleRegistrationForm />}
-        />{" "}
-        {/* <--- This line is crucial */}
-        {/* 필요한 다른 경로들을 여기에 추가할 수 있습니다 */}
+        <Route path="/register-vehicle" element={<VehicleRegistrationForm />} />
       </Routes>
     </Router>
   );
