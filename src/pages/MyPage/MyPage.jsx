@@ -1,8 +1,12 @@
+// src/pages/MyPage/MyPage.jsx
 import React from "react";
 import { Link } from "react-router-dom";
 import styles from "./MyPage.module.css";
 
 export const MyPage = () => {
+  // 첫 번째 충전소(그린 에너지 충전소)에 대한 리뷰 작성 여부 체크
+  const reviewed = Boolean(localStorage.getItem("review:station-green-energy"));
+
   return (
     <div className={styles.myPageContainer}>
       <div className={styles.contentWrapper}>
@@ -84,6 +88,7 @@ export const MyPage = () => {
               <div className={styles.summarySectionTitle}>최근 충전 이력</div>
             </div>
 
+            {/* 1) 그린 에너지 충전소 — 리뷰 상태 및 버튼 라벨/경로 동적 처리 */}
             <div className={styles.chargeHistoryItem}>
               <div className={styles.chargeDetails}>
                 <div className={styles.chargeDateWrapper}>
@@ -93,7 +98,9 @@ export const MyPage = () => {
                 </div>
 
                 <div className={styles.reviewStatusWrapper}>
-                  <div className={styles.reviewStatusText}>리뷰: 미작성</div>
+                  <div className={styles.reviewStatusText}>
+                    리뷰: {reviewed ? "작성" : "미작성"}
+                  </div>
                 </div>
 
                 <div className={styles.chargeStationInfoWrapper}>
@@ -104,14 +111,24 @@ export const MyPage = () => {
               </div>
 
               <div className={styles.reviewActionButtonContainer}>
-                <div className={styles.reviewActionButtonWrapper}>
+                <Link
+                  to={
+                    reviewed
+                      ? "/reviews/station-green-energy" // 리뷰 보기 페이지
+                      : "/review" // 리뷰 작성 페이지
+                  }
+                  className={styles.reviewActionButtonWrapper}
+                >
                   <div className={styles.reviewButtonTextWrapper}>
-                    <div className={styles.reviewButtonText}>리뷰 작성</div>
+                    <div className={styles.reviewButtonText}>
+                      {reviewed ? "리뷰 보기" : "리뷰 작성"}
+                    </div>
                   </div>
-                </div>
+                </Link>
               </div>
             </div>
 
+            {/* 2) 퀵 충전 스팟 — 데모용 고정 */}
             <div className={styles.chargeHistoryItem}>
               <div className={styles.chargeDetails}>
                 <div className={styles.chargeDateWrapper}>
@@ -132,14 +149,15 @@ export const MyPage = () => {
               </div>
 
               <div className={styles.reviewActionButtonContainer}>
-                <div className={styles.reviewActionButtonWrapper}>
+                <Link to="/review" className={styles.reviewActionButtonWrapper}>
                   <div className={styles.reviewButtonTextWrapper}>
                     <div className={styles.reviewButtonText}>리뷰 보기</div>
                   </div>
-                </div>
+                </Link>
               </div>
             </div>
 
+            {/* 3) 에코 충전 허브 — 데모용 고정 */}
             <div className={styles.chargeHistoryItem}>
               <div className={styles.chargeDetails}>
                 <div className={styles.chargeDateWrapper}>
@@ -160,13 +178,14 @@ export const MyPage = () => {
               </div>
 
               <div className={styles.reviewActionButtonContainer}>
-                <div className={styles.reviewActionButtonWrapper}>
+                <Link to="/review" className={styles.reviewActionButtonWrapper}>
                   <div className={styles.reviewButtonTextWrapper}>
                     <div className={styles.reviewButtonText}>리뷰 작성</div>
                   </div>
-                </div>
+                </Link>
               </div>
             </div>
+            {/* end 최근 충전 이력 */}
           </div>
         </div>
       </div>
