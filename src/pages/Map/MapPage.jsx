@@ -1,80 +1,71 @@
 // src/pages/Map/MapPage.jsx
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./MapPage.css";
 import { useNavigate } from "react-router-dom";
 
-// .env.local 에 VITE_KAKAO_REST_API_KEY=YOUR_REST_API_KEY
 const KAKAO_REST_API_KEY = import.meta.env.VITE_KAKAO_REST_API_KEY;
 
 export const MapPage = () => {
-  // 모드: 충전소 / 주변상권
   const [isChargerMode, setIsChargerMode] = useState(true);
-
-  // 마커 클릭 시 표시할 상세 정보(값이 있으면 팝업 표시)
   const [selectedAmenityDetails, setSelectedAmenityDetails] = useState(null);
-
-  // 충전소 필터 상태(현재 UI만, 실제 필터 적용은 추후)
   const [selectedChargerFilters, setSelectedChargerFilters] = useState([]);
   const [selectedSpeedFilters, setSelectedSpeedFilters] = useState([]);
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
-
-  // 주변 상권 필터 상태
   const [selectedAmenityFilters, setSelectedAmenityFilters] = useState([]);
-
-  // 검색어
   const [searchQuery, setSearchQuery] = useState("");
 
-  // 지도 refs
   const mapContainerRef = useRef(null);
   const mapInstance = useRef(null);
   const markersRef = useRef([]);
-
-  // 라우팅
   const navigate = useNavigate();
 
-  // 리뷰 라우팅 & 존재 여부 체크
-  const REVIEW_KEY = "review:station-green-energy";
-  const REVIEW_VIEW_PATH = "/reviews/station-green-energy";
-
-  const handleGoWriteReview = () => navigate("/review");
-  const handleGoViewReview = () => {
-    const exists = localStorage.getItem(REVIEW_KEY);
-    if (!exists) {
-      alert("리뷰가 없습니다");
-      return;
-    }
-    navigate(REVIEW_VIEW_PATH);
+  // ==== (중요) 장소별 ID/메타 유틸 ====
+  const slugify = (s) =>
+    String(s || "unknown")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9\-]/g, "");
+  const getPlaceId = (p) =>
+    p?.id ? String(p.id) : "charger-" + slugify(p?.place_name);
+  const getPlaceName = (p) => p?.place_name || "이름 정보 없음";
+  const getPlaceAddr = (p) =>
+    p?.road_address_name || p?.address_name || "주소 정보 없음";
+  const savePlaceMeta = (p) => {
+    const placeId = getPlaceId(p);
+    localStorage.setItem(
+      `place:${placeId}`,
+      JSON.stringify({ name: getPlaceName(p), addr: getPlaceAddr(p) })
+    );
+    return placeId;
   };
 
-  // 마커 추가 + 클릭 리스너
+  // 지도에 마커 찍기
   const addMarkers = useCallback((map, places) => {
-    const kakaoMaps = window.kakao.maps;
-
-    // 기존 마커 제거
+    const kakao = window.kakao.maps;
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
-
     places.forEach((place) => {
-      const markerPosition = new kakaoMaps.LatLng(place.y, place.x);
-      const marker = new kakaoMaps.Marker({
-        position: markerPosition,
+      const lat = Number(place.y),
+        lng = Number(place.x);
+      if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+      const marker = new kakao.Marker({
+        position: new kakao.LatLng(lat, lng),
         map,
       });
-
-      kakaoMaps.event.addListener(marker, "click", () => {
-        setSelectedAmenityDetails(place);
-      });
-
+      kakao.event.addListener(marker, "click", () =>
+        setSelectedAmenityDetails(place)
+      );
       markersRef.current.push(marker);
     });
   }, []);
 
-  // (데모) 충전소 데이터 로드
+  // 데모 충전소
   const loadChargers = useCallback(
     (map) => {
-      const chargers = [
+      addMarkers(map, [
         {
+          id: "charger-mju",
           x: "126.9230",
           y: "37.5802",
           place_name: "명지대학교 인문캠퍼스 충전소",
@@ -84,60 +75,38 @@ export const MapPage = () => {
           place_url: "https://www.mju.ac.kr",
         },
         {
+          id: "charger-gangnam",
           x: "127.02763",
           y: "37.49794",
           place_name: "강남역 충전소",
-          // 빈 필드가 있을 수 있으므로 팝업에서 안전 처리
+          road_address_name: "서울특별시 강남구 강남대로",
         },
-      ];
-      addMarkers(map, chargers);
+      ]);
     },
     [addMarkers]
   );
 
-  // 주변 상권 로드(카카오 로컬 API)
+  // 주변 상권 (카카오 API)
   const loadAmenities = useCallback(
     (map) => {
-      if (!KAKAO_REST_API_KEY) {
-        console.error("카카오 REST API 키가 설정되지 않았습니다.");
-        return;
-      }
-      const kakaoMaps = window.kakao.maps;
+      if (!KAKAO_REST_API_KEY) return console.error("카카오 키가 없습니다.");
       const center = map.getCenter();
-      const y = center.getLat();
-      const x = center.getLng();
-
-      const selectedAmenity = selectedAmenityFilters[0] || "카페";
-      const categoryGroupCode = {
-        식당: "FD6",
-        카페: "CE7",
-        공원: "AT4",
-        쇼핑: "MT1",
-      }[selectedAmenity];
-
-      if (!categoryGroupCode) {
-        addMarkers(map, []);
-        return;
-      }
-
-      const url = `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=${categoryGroupCode}&x=${x}&y=${y}&radius=1000&size=15`;
-
-      fetch(url, {
-        method: "GET",
-        headers: {
-          Authorization: `KakaoAK ${KAKAO_REST_API_KEY}`,
-        },
-      })
+      const y = center.getLat(),
+        x = center.getLng();
+      const selected = selectedAmenityFilters[0] || "카페";
+      const code = { 식당: "FD6", 카페: "CE7", 공원: "AT4", 쇼핑: "MT1" }[
+        selected
+      ];
+      if (!code) return addMarkers(map, []);
+      fetch(
+        `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=${code}&x=${x}&y=${y}&radius=1000&size=15`,
+        {
+          headers: { Authorization: `KakaoAK ${KAKAO_REST_API_KEY}` },
+        }
+      )
         .then((r) => r.json())
-        .then((data) => {
-          if (data.documents) {
-            // Kakao API는 x=lng, y=lat 문자열 제공
-            addMarkers(map, data.documents);
-          }
-        })
-        .catch((e) => {
-          console.error("카카오 로컬 API 호출 중 오류:", e);
-        });
+        .then((d) => d.documents && addMarkers(map, d.documents))
+        .catch((e) => console.error(e));
     },
     [KAKAO_REST_API_KEY, selectedAmenityFilters, addMarkers]
   );
@@ -145,85 +114,72 @@ export const MapPage = () => {
   // 주소 검색
   const handleSearch = () => {
     if (!searchQuery) return;
-
-    const url = `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(
-      searchQuery
-    )}`;
-
-    fetch(url, {
-      method: "GET",
-      headers: {
-        Authorization: `KakaoAK ${KAKAO_REST_API_KEY}`,
-      },
-    })
+    fetch(
+      `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(
+        searchQuery
+      )}`,
+      {
+        headers: { Authorization: `KakaoAK ${KAKAO_REST_API_KEY}` },
+      }
+    )
       .then((r) => r.json())
-      .then((data) => {
-        if (data.documents && data.documents.length > 0) {
-          const first = data.documents[0];
-          const newPos = new window.kakao.maps.LatLng(first.y, first.x);
-          mapInstance.current.setCenter(newPos);
-        } else {
-          alert("검색 결과가 없습니다.");
-        }
-      })
-      .catch((e) => console.error("주소 검색 오류:", e));
+      .then((d) => {
+        if (!d.documents?.length) return alert("검색 결과가 없습니다.");
+        const first = d.documents[0];
+        mapInstance.current.setCenter(
+          new window.kakao.maps.LatLng(first.y, first.x)
+        );
+      });
   };
 
   // 지도 초기화
   useEffect(() => {
-    if (!window.kakao || !window.kakao.maps) {
-      console.warn("Kakao Maps SDK not loaded yet.");
-      return;
-    }
-
-    const kakaoMaps = window.kakao.maps;
-    const container = mapContainerRef.current;
-
-    const options = {
-      center: new kakaoMaps.LatLng(37.5802, 126.923),
+    if (!window.kakao?.maps) return;
+    const kakao = window.kakao.maps;
+    mapInstance.current = new kakao.Map(mapContainerRef.current, {
+      center: new kakao.LatLng(37.5802, 126.923),
       level: 3,
-    };
-
-    mapInstance.current = new kakaoMaps.Map(container, options);
-
-    const handleMapModeChange = () => {
-      if (isChargerMode) {
-        loadChargers(mapInstance.current);
-      } else {
-        loadAmenities(mapInstance.current);
-      }
-    };
-
-    const handleMapDragend = () => {
-      if (!isChargerMode) {
-        loadAmenities(mapInstance.current);
-      }
-    };
-
-    handleMapModeChange();
-    kakaoMaps.event.addListener(
-      mapInstance.current,
-      "dragend",
-      handleMapDragend
-    );
-
-    return () => {
-      kakaoMaps.event.removeListener(
-        mapInstance.current,
-        "dragend",
-        handleMapDragend
-      );
-    };
+    });
+    const refresh = () =>
+      isChargerMode
+        ? loadChargers(mapInstance.current)
+        : loadAmenities(mapInstance.current);
+    const onDragEnd = () =>
+      !isChargerMode && loadAmenities(mapInstance.current);
+    refresh();
+    kakao.event.addListener(mapInstance.current, "dragend", onDragEnd);
+    return () =>
+      kakao.event.removeListener(mapInstance.current, "dragend", onDragEnd);
   }, [isChargerMode, selectedAmenityFilters, loadChargers, loadAmenities]);
 
-  // 필터 토글
-  const toggleFilter = (filters, setFilters, value) => {
-    if (filters.includes(value)) setFilters([]);
-    else setFilters([value]);
+  const toggleFilter = (filters, setFilters, v) =>
+    filters.includes(v) ? setFilters([]) : setFilters([v]);
+  const handleClosePopup = () => setSelectedAmenityDetails(null);
+
+  // (핵심) 팝업 버튼: 장소별 작성/보기
+  const handleWriteForSelected = () => {
+    const pid = savePlaceMeta(selectedAmenityDetails);
+    navigate(`/review/new/${pid}`);
+  };
+  const handleListForSelected = () => {
+    const pid = savePlaceMeta(selectedAmenityDetails);
+    const list = JSON.parse(localStorage.getItem(`reviews:${pid}`) || "[]");
+    if (!list.length) return alert("리뷰가 없습니다");
+    navigate(`/reviews/${pid}`);
   };
 
-  // 팝업 닫기
-  const handleClosePopup = () => setSelectedAmenityDetails(null);
+  // ===== 우측 상단 메뉴(FAB) =====
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDoc = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target))
+        setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [menuOpen]);
 
   return (
     <div className="map-page-container">
@@ -234,7 +190,7 @@ export const MapPage = () => {
         className="kakao-map-container"
       />
 
-      {/* 헤더(검색/모드 토글) */}
+      {/* 헤더 */}
       <div className="header-container">
         <div className="search-bar">
           <input
@@ -245,7 +201,7 @@ export const MapPage = () => {
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
           <button className="search-button" onClick={handleSearch}>
-            <span className="material-icons">search</span>
+            <span>search</span>
           </button>
         </div>
 
@@ -254,14 +210,12 @@ export const MapPage = () => {
             className={`filter-button ${isChargerMode ? "active" : ""}`}
             onClick={() => setIsChargerMode(true)}
           >
-            <span className="material-icons" />
             충전소
           </button>
           <button
             className={`filter-button ${!isChargerMode ? "active" : ""}`}
             onClick={() => setIsChargerMode(false)}
           >
-            <span className="material-icons" />
             주변 상권
           </button>
         </div>
@@ -272,55 +226,52 @@ export const MapPage = () => {
         <h3 className="filter-title">
           {isChargerMode ? "충전소 필터" : "주변 상권 필터"}
         </h3>
-
         {isChargerMode ? (
           <div className="charger-filters">
             <div>
               <label className="filter-label">커넥터 종류</label>
               <div className="filter-options">
-                {["DC콤보", "차데모", "AC3상"].map((type) => (
+                {["DC콤보", "차데모", "AC3상"].map((t) => (
                   <button
-                    key={type}
+                    key={t}
                     className={`filter-option-button ${
-                      selectedChargerFilters.includes(type) ? "selected" : ""
+                      selectedChargerFilters.includes(t) ? "selected" : ""
                     }`}
                     onClick={() =>
                       toggleFilter(
                         selectedChargerFilters,
                         setSelectedChargerFilters,
-                        type
+                        t
                       )
                     }
                   >
-                    {type}
+                    {t}
                   </button>
                 ))}
               </div>
             </div>
-
             <div>
               <label className="filter-label">충전 속도</label>
               <div className="filter-options">
-                {["급속 (50kW+)", "완속"].map((speed) => (
+                {["급속 (50kW+)", "완속"].map((s) => (
                   <button
-                    key={speed}
+                    key={s}
                     className={`filter-option-button ${
-                      selectedSpeedFilters.includes(speed) ? "selected" : ""
+                      selectedSpeedFilters.includes(s) ? "selected" : ""
                     }`}
                     onClick={() =>
                       toggleFilter(
                         selectedSpeedFilters,
                         setSelectedSpeedFilters,
-                        speed
+                        s
                       )
                     }
                   >
-                    {speed}
+                    {s}
                   </button>
                 ))}
               </div>
             </div>
-
             <div>
               <label className="checkbox-label">
                 <input
@@ -335,21 +286,21 @@ export const MapPage = () => {
         ) : (
           <div className="amenity-filters">
             <div className="filter-options">
-              {["식당", "카페", "공원", "쇼핑"].map((amenity) => (
+              {["식당", "카페", "공원", "쇼핑"].map((a) => (
                 <button
-                  key={amenity}
+                  key={a}
                   className={`filter-option-button ${
-                    selectedAmenityFilters.includes(amenity) ? "selected" : ""
+                    selectedAmenityFilters.includes(a) ? "selected" : ""
                   }`}
                   onClick={() =>
                     toggleFilter(
                       selectedAmenityFilters,
                       setSelectedAmenityFilters,
-                      amenity
+                      a
                     )
                   }
                 >
-                  {amenity}
+                  {a}
                 </button>
               ))}
             </div>
@@ -368,11 +319,10 @@ export const MapPage = () => {
               <div className="popup-header">
                 <div>
                   <h2 className="popup-title">
-                    {selectedAmenityDetails.place_name || "이름 정보 없음"}
+                    {getPlaceName(selectedAmenityDetails)}
                   </h2>
                   <p className="popup-subtitle">
-                    {selectedAmenityDetails.road_address_name ||
-                      "주소 정보 없음"}
+                    {getPlaceAddr(selectedAmenityDetails)}
                   </p>
                 </div>
                 <button className="close-button" onClick={handleClosePopup}>
@@ -382,7 +332,7 @@ export const MapPage = () => {
 
               <img
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuABzEvDttHWWFB1YjYOM3IFBPdWVNvrulJY3a1ct9raQH0TfF4XDWqL9375hcGetFnn2hqTJVTyN6YGqkw1vjbPMeWEhnlAZSHqe-tzOU4GNiu4jzmeat3H_dH708JAdXmt5XyGRbCNNUvNGweNh2Dzb1Jg8wmZfTHK4bqXO5R50Hv3hlzqL6yXLItcNWwSaGRKx_J89ifej6T3cnVOh9ptexXy_sc_KOt4eFQwfV5j3tXS1dC4fzt1ohy6hFNlWKJxA-b1sMrffwf8"
-                alt={`${selectedAmenityDetails.place_name || ""} 사진`}
+                alt={`${getPlaceName(selectedAmenityDetails)} 사진`}
                 className="amenity-image"
               />
 
@@ -390,7 +340,7 @@ export const MapPage = () => {
                 <div className="amenity-info-item">
                   <p className="info-label">카테고리</p>
                   <p className="info-value">
-                    {selectedAmenityDetails.category_name
+                    {selectedAmenityDetails?.category_name
                       ? selectedAmenityDetails.category_name.split(" > ").pop()
                       : "정보 없음"}
                   </p>
@@ -398,7 +348,7 @@ export const MapPage = () => {
                 <div className="amenity-info-item">
                   <p className="info-label">전화번호</p>
                   <p className="info-value">
-                    {selectedAmenityDetails.phone || "정보 없음"}
+                    {selectedAmenityDetails?.phone || "정보 없음"}
                   </p>
                 </div>
                 <div className="amenity-info-item">
@@ -408,7 +358,7 @@ export const MapPage = () => {
                 <div className="amenity-info-item">
                   <p className="info-label">홈페이지</p>
                   <p className="info-value">
-                    {selectedAmenityDetails.place_url ? (
+                    {selectedAmenityDetails?.place_url ? (
                       <a
                         href={selectedAmenityDetails.place_url}
                         target="_blank"
@@ -427,7 +377,7 @@ export const MapPage = () => {
                 <span className="material-icons">thumb_up</span> 추천해요
               </button>
 
-              {/* 리뷰 작성 / 보기 버튼 */}
+              {/* 리뷰 작성 / 보기 */}
               <div
                 style={{
                   display: "flex",
@@ -439,7 +389,7 @@ export const MapPage = () => {
               >
                 <button
                   type="button"
-                  onClick={handleGoWriteReview}
+                  onClick={handleWriteForSelected}
                   style={{
                     flex: "1 1 140px",
                     padding: "10px 14px",
@@ -455,7 +405,7 @@ export const MapPage = () => {
 
                 <button
                   type="button"
-                  onClick={handleGoViewReview}
+                  onClick={handleListForSelected}
                   style={{
                     flex: "1 1 140px",
                     padding: "10px 14px",
@@ -473,6 +423,47 @@ export const MapPage = () => {
           </div>
         </div>
       )}
+
+      {/* 우측 상단 메뉴(FAB) */}
+      <div className="menu-fab" ref={menuRef}>
+        <button
+          type="button"
+          className="menu-button"
+          aria-label="메뉴"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          <span className="menu-bars" aria-hidden="true">
+            <span className="bar" />
+            <span className="bar" />
+            <span className="bar" />
+          </span>
+        </button>
+        {menuOpen && (
+          <div className="menu-dropdown">
+            <button
+              type="button"
+              className="menu-item-button"
+              onClick={() => {
+                setMenuOpen(false);
+                navigate("/");
+              }}
+            >
+              홈페이지
+            </button>
+            <button
+              type="button"
+              className="menu-item-button"
+              onClick={() => {
+                setMenuOpen(false);
+                navigate("/mypage");
+              }}
+            >
+              마이페이지
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -364,3 +364,82 @@
 .recommend-button:hover {
   background-color: #16a34a; /* green-600 */
 }
+
+/* === Top-right menu button === */
+/* === Top-right menu button === */
+:root {
+  --menu-size: 44px; /* search 버튼 크기와 유사 */
+  --accent-bg: #a0f0b0; /* 검색 버튼 색에 맞춰 조정 */
+  --accent-border: #a0f0b0;
+}
+
+.menu-fab {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1100;
+}
+
+.menu-button {
+  width: var(--menu-size);
+  height: var(--menu-size);
+  border-radius: 12px; /* 살짝 둥글게 */
+  border: 1px solid var(--accent-border);
+  background: var(--accent-bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.menu-button:hover {
+  filter: brightness(0.98);
+}
+
+/* 세로줄 3개 아이콘 */
+.menu-bars {
+  display: flex;
+  flex-direction: column; /* 세 줄을 위아래로 쌓음 */
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 18px;
+  height: 18px;
+}
+
+.menu-bars .bar {
+  width: 16px; /* 가로 길이 */
+  height: 2px; /* 막대 두께 */
+  background: #111416; /* 검은색 */
+  border-radius: 2px;
+}
+
+/* 드롭다운 */
+.menu-dropdown {
+  position: absolute;
+  top: calc(var(--menu-size) + 8px);
+  right: 0;
+  width: 180px;
+  padding: 8px;
+  background: #ffffff;
+  border: 1px solid #e5e8ea;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  display: grid;
+  gap: 8px;
+}
+
+.menu-item-button {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e8ea;
+  background: #f3f6f9;
+  color: #0c141c;
+  text-align: left;
+  cursor: pointer;
+}
+.menu-item-button:hover {
+  background: #e9eef3;
+}

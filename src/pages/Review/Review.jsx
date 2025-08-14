@@ -1,40 +1,43 @@
 // src/pages/Review/Review.js
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import styles from "./Review.module.css";
-
-const STATION_ID = "station-green-energy";
-const STATION_NAME = "그린 에너지 충전소";
-const STATION_ADDR = "서울시 강남구 테헤란로 123";
 
 export const ReviewPage = () => {
   const navigate = useNavigate();
+  const { placeId } = useParams();
+
+  const meta = JSON.parse(
+    localStorage.getItem(`place:${placeId}`) || "null"
+  ) || {
+    name: "이름 정보 없음",
+    addr: "주소 정보 없음",
+  };
 
   const [rating, setRating] = useState(0);
-  const [recommend, setRecommend] = useState(null); // true | false | null
+  const [recommend, setRecommend] = useState(null);
   const [text, setText] = useState("");
   const [files, setFiles] = useState([]);
 
-  const onPickFiles = (e) => setFiles(Array.from(e.target.files || []));
   const canSubmit = rating > 0 && recommend !== null && text.trim().length > 0;
 
   const handleSubmit = () => {
-    if (!canSubmit) {
-      alert("별점, 추천 여부, 리뷰 내용을 모두 입력해 주세요.");
-      return;
-    }
-    const payload = {
-      stationId: STATION_ID,
-      stationName: STATION_NAME,
+    if (!canSubmit)
+      return alert("별점, 추천 여부, 리뷰 내용을 모두 입력해 주세요.");
+    const key = `reviews:${placeId}`;
+    const list = JSON.parse(localStorage.getItem(key) || "[]");
+    list.push({
+      id: String(Date.now()),
+      placeId,
       rating,
       recommend,
       text,
       photosCount: files.length,
       createdAt: Date.now(),
-    };
-    localStorage.setItem(`review:${STATION_ID}`, JSON.stringify(payload));
+    });
+    localStorage.setItem(key, JSON.stringify(list));
     alert("리뷰가 등록되었습니다.");
-    navigate("/mypage");
+    navigate(`/reviews/${placeId}`); // ← 작성 직후 '그 장소'의 목록으로 이동
   };
 
   const selectedStar = {
@@ -58,76 +61,50 @@ export const ReviewPage = () => {
           <div className={styles.reviewFormContainer}>
             <div className={styles.reviewCard}>
               <div className={styles.stationNameSection}>
-                <div className={styles.stationName}>{STATION_NAME}</div>
+                <div className={styles.stationName}>{meta.name}</div>
               </div>
               <div className={styles.stationAddressSection}>
-                <div className={styles.stationAddress}>{STATION_ADDR}</div>
+                <div className={styles.stationAddress}>{meta.addr}</div>
               </div>
 
-              {/* 별점 */}
               <div className={styles.sectionTitleWrapper}>
                 <div className={styles.sectionTitle}>별점</div>
               </div>
-              <div
-                className={styles.starRatingSection}
-                role="radiogroup"
-                aria-label="별점 선택"
-              >
+              <div className={styles.starRatingSection}>
                 {[1, 2, 3, 4, 5].map((n) => (
                   <div
                     key={n}
-                    role="radio"
-                    aria-checked={rating === n}
-                    tabIndex={0}
-                    onClick={() => setRating(n)}
-                    onKeyDown={(e) =>
-                      (e.key === "Enter" || e.key === " ") && setRating(n)
-                    }
                     className={styles.starRatingButton}
                     style={rating >= n ? selectedStar : undefined}
+                    onClick={() => setRating(n)}
                   >
                     <div className={styles.starRatingValue}>{n}</div>
                   </div>
                 ))}
               </div>
 
-              {/* 추천 여부 */}
               <div className={styles.sectionTitleWrapper}>
                 <div className={styles.sectionTitle}>추천 여부</div>
               </div>
               <div className={styles.recommendationSection}>
                 <div className={styles.recommendationButtons}>
                   <div
-                    role="button"
-                    tabIndex={0}
-                    aria-pressed={recommend === true}
-                    onClick={() => setRecommend(true)}
-                    onKeyDown={(e) =>
-                      (e.key === "Enter" || e.key === " ") && setRecommend(true)
-                    }
                     className={`${styles.recommendButton} ${
                       recommend === true ? styles.btnActive : styles.btnInactive
                     }`}
+                    onClick={() => setRecommend(true)}
                   >
                     <div className={styles.buttonTextWrapper}>
                       <div className={styles.buttonText}>추천</div>
                     </div>
                   </div>
-
                   <div
-                    role="button"
-                    tabIndex={0}
-                    aria-pressed={recommend === false}
-                    onClick={() => setRecommend(false)}
-                    onKeyDown={(e) =>
-                      (e.key === "Enter" || e.key === " ") &&
-                      setRecommend(false)
-                    }
                     className={`${styles.disrecommendButton} ${
                       recommend === false
                         ? styles.btnActive
                         : styles.btnInactive
                     }`}
+                    onClick={() => setRecommend(false)}
                   >
                     <div className={styles.buttonTextWrapper}>
                       <div className={styles.buttonText}>비추천</div>
@@ -136,7 +113,6 @@ export const ReviewPage = () => {
                 </div>
               </div>
 
-              {/* 리뷰 작성 */}
               <div className={styles.sectionTitleWrapper}>
                 <div className={styles.sectionTitle}>리뷰 작성</div>
               </div>
@@ -144,15 +120,14 @@ export const ReviewPage = () => {
                 <div className={styles.reviewInputContainer}>
                   <textarea
                     className={styles.reviewInputField}
+                    rows={6}
                     placeholder="리뷰를 입력하세요."
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    rows={6}
                   />
                 </div>
               </div>
 
-              {/* 사진 추가 */}
               <div className={styles.sectionTitleWrapper}>
                 <div className={styles.sectionTitle}>(옵션) 사진 추가</div>
               </div>
@@ -173,13 +148,12 @@ export const ReviewPage = () => {
                       )}
                     </div>
                   </div>
-
                   <input
                     id="review-photos"
                     type="file"
                     accept="image/*"
                     multiple
-                    onChange={onPickFiles}
+                    onChange={(e) => setFiles(Array.from(e.target.files || []))}
                     style={{ display: "none" }}
                   />
                   <label
@@ -193,7 +167,6 @@ export const ReviewPage = () => {
                 </div>
               </div>
 
-              {/* 등록 버튼 */}
               <div className={styles.submitButtonSection}>
                 <button
                   type="button"
@@ -208,7 +181,6 @@ export const ReviewPage = () => {
               </div>
             </div>
           </div>
-          {/* end .reviewFormContainer */}
         </div>
       </div>
     </div>

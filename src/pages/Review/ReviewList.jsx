@@ -22,6 +22,7 @@ export const ReviewListPage = () => {
   const snippet = (t) => (t.length > 40 ? t.slice(0, 40) + "…" : t);
   const fmt = (ts) => new Date(ts).toLocaleString();
 
+  // 리뷰가 없을 때
   if (!list.length) {
     return (
       <div className={styles.reviewPageContainer}>
@@ -69,6 +70,15 @@ export const ReviewListPage = () => {
                     </div>
                   </button>
                 </div>
+
+                {/* 지도로 가기 버튼 (없을 때도 제공) */}
+                <div className={styles.submitButtonSection}>
+                  <Link to="/map" className={styles.submitReviewButton}>
+                    <div className={styles.buttonTextWrapper}>
+                      <div className={styles.buttonText}>지도로 가기</div>
+                    </div>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -77,6 +87,7 @@ export const ReviewListPage = () => {
     );
   }
 
+  // 리뷰가 있을 때(목록)
   return (
     <div className={styles.reviewPageContainer}>
       <div className={styles.headerWrapper}>
@@ -142,6 +153,7 @@ export const ReviewListPage = () => {
                   ))}
               </div>
 
+              {/* 리뷰 추가 작성 */}
               <div className={styles.submitButtonSection}>
                 <Link
                   to={`/review/new/${placeId}`}
@@ -149,6 +161,15 @@ export const ReviewListPage = () => {
                 >
                   <div className={styles.buttonTextWrapper}>
                     <div className={styles.buttonText}>리뷰 추가 작성</div>
+                  </div>
+                </Link>
+              </div>
+
+              {/* ⬇️ 요청: "리뷰 추가 작성" 밑에 지도로 가기 버튼 */}
+              <div className={styles.submitButtonSection}>
+                <Link to="/map" className={styles.submitReviewButton}>
+                  <div className={styles.buttonTextWrapper}>
+                    <div className={styles.buttonText}>지도로 가기</div>
                   </div>
                 </Link>
               </div>
