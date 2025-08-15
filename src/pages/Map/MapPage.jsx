@@ -19,7 +19,7 @@ export const MapPage = () => {
   const markersRef = useRef([]);
   const navigate = useNavigate();
 
-  // ==== (중요) 장소별 ID/메타 유틸 ====
+  // ==== 장소별 ID/메타 유틸 ====
   const slugify = (s) =>
     String(s || "unknown")
       .trim()
@@ -100,9 +100,7 @@ export const MapPage = () => {
       if (!code) return addMarkers(map, []);
       fetch(
         `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=${code}&x=${x}&y=${y}&radius=1000&size=15`,
-        {
-          headers: { Authorization: `KakaoAK ${KAKAO_REST_API_KEY}` },
-        }
+        { headers: { Authorization: `KakaoAK ${KAKAO_REST_API_KEY}` } }
       )
         .then((r) => r.json())
         .then((d) => d.documents && addMarkers(map, d.documents))
@@ -118,9 +116,7 @@ export const MapPage = () => {
       `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(
         searchQuery
       )}`,
-      {
-        headers: { Authorization: `KakaoAK ${KAKAO_REST_API_KEY}` },
-      }
+      { headers: { Authorization: `KakaoAK ${KAKAO_REST_API_KEY}` } }
     )
       .then((r) => r.json())
       .then((d) => {
@@ -156,7 +152,7 @@ export const MapPage = () => {
     filters.includes(v) ? setFilters([]) : setFilters([v]);
   const handleClosePopup = () => setSelectedAmenityDetails(null);
 
-  // (핵심) 팝업 버튼: 장소별 작성/보기
+  // 팝업 버튼: 장소별 작성/보기
   const handleWriteForSelected = () => {
     const pid = savePlaceMeta(selectedAmenityDetails);
     navigate(`/review/new/${pid}`);
@@ -180,6 +176,23 @@ export const MapPage = () => {
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, [menuOpen]);
+
+  // ===== 좋아요(하트) =====
+  const [likeCount, setLikeCount] = useState(0);
+  useEffect(() => {
+    if (!selectedAmenityDetails) return;
+    const pid = getPlaceId(selectedAmenityDetails);
+    const stored = parseInt(localStorage.getItem(`likes:${pid}`) || "0", 10);
+    setLikeCount(Number.isNaN(stored) ? 0 : stored);
+  }, [selectedAmenityDetails]);
+
+  const handleLikeClick = () => {
+    if (!selectedAmenityDetails) return;
+    const pid = getPlaceId(selectedAmenityDetails);
+    const next = likeCount + 1;
+    localStorage.setItem(`likes:${pid}`, String(next));
+    setLikeCount(next);
+  };
 
   return (
     <div className="map-page-container">
@@ -318,9 +331,37 @@ export const MapPage = () => {
             <div className="amenity-details">
               <div className="popup-header">
                 <div>
-                  <h2 className="popup-title">
-                    {getPlaceName(selectedAmenityDetails)}
-                  </h2>
+                  {/* 제목 + 빨간 하트 카운트 */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <h2 className="popup-title" style={{ margin: 0 }}>
+                      {getPlaceName(selectedAmenityDetails)}
+                    </h2>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        color: "#e53935",
+                        fontWeight: 700,
+                      }}
+                    >
+                      <span
+                        className="material-icons"
+                        style={{ fontSize: 18, color: "#e53935" }}
+                      >
+                        GOOD
+                      </span>
+                      {likeCount}
+                    </span>
+                  </div>
+
                   <p className="popup-subtitle">
                     {getPlaceAddr(selectedAmenityDetails)}
                   </p>
@@ -373,8 +414,9 @@ export const MapPage = () => {
                 </div>
               </div>
 
-              <button className="recommend-button">
-                <span className="material-icons">thumb_up</span> 추천해요
+              {/* 좋아요 버튼 */}
+              <button className="recommend-button" onClick={handleLikeClick}>
+                <span className="material-icons">GOOD</span> 좋아요
               </button>
 
               {/* 리뷰 작성 / 보기 */}
