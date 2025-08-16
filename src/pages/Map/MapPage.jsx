@@ -6,20 +6,40 @@ import { useNavigate } from "react-router-dom";
 const KAKAO_REST_API_KEY = import.meta.env.VITE_KAKAO_REST_API_KEY;
 
 export const MapPage = () => {
+  // 모드: 충전소 / 주변상권
   const [isChargerMode, setIsChargerMode] = useState(true);
+
+  // 팝업 상세
   const [selectedAmenityDetails, setSelectedAmenityDetails] = useState(null);
+
+  // (팝다운 내부) 선택 중 필터
   const [selectedChargerFilters, setSelectedChargerFilters] = useState([]);
   const [selectedSpeedFilters, setSelectedSpeedFilters] = useState([]);
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [selectedAmenityFilters, setSelectedAmenityFilters] = useState([]);
+  const [radiusKm, setRadiusKm] = useState(3); // UI 전용
+
+  // (검색창 아래 칩으로 표시할) 적용된 필터
+  const [appliedChargerFilters, setAppliedChargerFilters] = useState([]);
+  const [appliedSpeedFilters, setAppliedSpeedFilters] = useState([]);
+  const [appliedAmenityFilters, setAppliedAmenityFilters] = useState([]);
+  const [appliedShowAvailableOnly, setAppliedShowAvailableOnly] =
+    useState(false);
+
+  // 검색어
   const [searchQuery, setSearchQuery] = useState("");
 
+  // 지도 refs
   const mapContainerRef = useRef(null);
   const mapInstance = useRef(null);
   const markersRef = useRef([]);
+
+  // 라우팅
   const navigate = useNavigate();
 
-  // ==== 장소별 ID/메타 유틸 ====
+  const AMENITY_RADIUS_M = 500;
+
+  // 유틸
   const slugify = (s) =>
     String(s || "unknown")
       .trim()
@@ -40,7 +60,7 @@ export const MapPage = () => {
     return placeId;
   };
 
-  // 지도에 마커 찍기
+  // 마커 추가
   const addMarkers = useCallback((map, places) => {
     const kakao = window.kakao.maps;
     markersRef.current.forEach((m) => m.setMap(null));
@@ -60,7 +80,7 @@ export const MapPage = () => {
     });
   }, []);
 
-  // 데모 충전소
+  // (데모) 충전소 로드
   const loadChargers = useCallback(
     (map) => {
       addMarkers(map, [
@@ -93,20 +113,26 @@ export const MapPage = () => {
       const center = map.getCenter();
       const y = center.getLat(),
         x = center.getLng();
-      const selected = selectedAmenityFilters[0] || "카페";
+      const selected =
+        appliedAmenityFilters[0] || selectedAmenityFilters[0] || "카페";
       const code = { 식당: "FD6", 카페: "CE7", 공원: "AT4", 쇼핑: "MT1" }[
         selected
       ];
       if (!code) return addMarkers(map, []);
       fetch(
-        `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=${code}&x=${x}&y=${y}&radius=1000&size=15`,
+        `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=${code}&x=${x}&y=${y}&radius=${AMENITY_RADIUS_M}&size=15`,
         { headers: { Authorization: `KakaoAK ${KAKAO_REST_API_KEY}` } }
       )
         .then((r) => r.json())
         .then((d) => d.documents && addMarkers(map, d.documents))
         .catch((e) => console.error(e));
     },
-    [KAKAO_REST_API_KEY, selectedAmenityFilters, addMarkers]
+    [
+      KAKAO_REST_API_KEY,
+      appliedAmenityFilters,
+      selectedAmenityFilters,
+      addMarkers,
+    ]
   );
 
   // 주소 검색
@@ -146,13 +172,63 @@ export const MapPage = () => {
     kakao.event.addListener(mapInstance.current, "dragend", onDragEnd);
     return () =>
       kakao.event.removeListener(mapInstance.current, "dragend", onDragEnd);
-  }, [isChargerMode, selectedAmenityFilters, loadChargers, loadAmenities]);
+  }, [isChargerMode, loadChargers, loadAmenities]);
 
+  // 팝다운
+  const [filterOpen, setFilterOpen] = useState(false);
+  const searchGroupRef = useRef(null);
+  useEffect(() => {
+    const onKey = (e) => e.key === "Escape" && setFilterOpen(false);
+    const onClick = (e) => {
+      if (!filterOpen) return;
+      if (
+        searchGroupRef.current &&
+        !searchGroupRef.current.contains(e.target)
+      ) {
+        setFilterOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onClick);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onClick);
+    };
+  }, [filterOpen]);
+
+  // 유틸
   const toggleFilter = (filters, setFilters, v) =>
     filters.includes(v) ? setFilters([]) : setFilters([v]);
+
+  // 적용: 선택 상태 → 적용 상태 복사 (검색창 아래 칩 표시)
+  const applyFilters = () => {
+    if (isChargerMode) {
+      setAppliedChargerFilters([...selectedChargerFilters]);
+      setAppliedSpeedFilters([...selectedSpeedFilters]);
+      setAppliedShowAvailableOnly(!!showAvailableOnly);
+    } else {
+      setAppliedAmenityFilters([...selectedAmenityFilters]);
+    }
+    setFilterOpen(false);
+  };
+
+  // 초기화: 선택/적용 모두 비우기 (칩도 숨김)
+  const resetFilters = () => {
+    setSelectedChargerFilters([]);
+    setSelectedSpeedFilters([]);
+    setShowAvailableOnly(false);
+    setSelectedAmenityFilters([]);
+    setRadiusKm(3);
+
+    setAppliedChargerFilters([]);
+    setAppliedSpeedFilters([]);
+    setAppliedAmenityFilters([]);
+    setAppliedShowAvailableOnly(false);
+  };
+
   const handleClosePopup = () => setSelectedAmenityDetails(null);
 
-  // 팝업 버튼: 장소별 작성/보기
+  // 리뷰 작성/목록 이동
   const handleWriteForSelected = () => {
     const pid = savePlaceMeta(selectedAmenityDetails);
     navigate(`/review/new/${pid}`);
@@ -164,7 +240,7 @@ export const MapPage = () => {
     navigate(`/reviews/${pid}`);
   };
 
-  // ===== 우측 상단 메뉴(FAB) =====
+  // 상단 메뉴
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   useEffect(() => {
@@ -177,7 +253,7 @@ export const MapPage = () => {
     return () => document.removeEventListener("mousedown", onDoc);
   }, [menuOpen]);
 
-  // ===== 좋아요(하트) =====
+  // 좋아요
   const [likeCount, setLikeCount] = useState(0);
   useEffect(() => {
     if (!selectedAmenityDetails) return;
@@ -185,7 +261,6 @@ export const MapPage = () => {
     const stored = parseInt(localStorage.getItem(`likes:${pid}`) || "0", 10);
     setLikeCount(Number.isNaN(stored) ? 0 : stored);
   }, [selectedAmenityDetails]);
-
   const handleLikeClick = () => {
     if (!selectedAmenityDetails) return;
     const pid = getPlaceId(selectedAmenityDetails);
@@ -193,6 +268,13 @@ export const MapPage = () => {
     localStorage.setItem(`likes:${pid}`, String(next));
     setLikeCount(next);
   };
+
+  // 적용된 칩 존재 여부
+  const hasAnyApplied =
+    appliedChargerFilters.length > 0 ||
+    appliedSpeedFilters.length > 0 ||
+    appliedAmenityFilters.length > 0 ||
+    appliedShowAvailableOnly;
 
   return (
     <div className="map-page-container">
@@ -203,22 +285,184 @@ export const MapPage = () => {
         className="kakao-map-container"
       />
 
-      {/* 헤더 */}
-      <div className="header-container">
-        <div className="search-bar">
-          <input
-            type="text"
-            placeholder="목적지 검색 (예: 서울특별시 강남구)"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          />
-          <button className="search-button" onClick={handleSearch}>
-            <span>search</span>
-          </button>
+      {/* ===== 상단 Topbar (검색 + 모드 + 메뉴) ===== */}
+      <div className="topbar">
+        {/* 검색 그룹(필터 버튼 포함) */}
+        <div className="search-group" ref={searchGroupRef}>
+          <div className="search-bar">
+            <button
+              type="button"
+              className="filter-drawer-button"
+              aria-label="필터 열기"
+              aria-expanded={filterOpen}
+              onClick={() => setFilterOpen((v) => !v)}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                aria-hidden="true"
+              >
+                <path
+                  d="M10 6h10v2H10V6zM4 6h2v2H4V6zm6 10h10v2H10v-2zM4 16h6v2H4v-2zm8-5h6v2h-6V11zM4 11h8v2H4v-2z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+
+            <input
+              type="text"
+              placeholder="목적지 검색 (예: 서울특별시 강남구)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            />
+            <button className="search-button" onClick={handleSearch}>
+              <span>search</span>
+            </button>
+          </div>
+
+          {/* ▼ 오버레이 칩: 검색창을 밀지 않음 (absolute) */}
+          {hasAnyApplied && (
+            <div className="applied-chips-overlay">
+              <div className="chips" style={{ flexWrap: "wrap", gap: 8 }}>
+                {appliedChargerFilters.map((t) => (
+                  <span key={`conn-${t}`} className="chip selected">
+                    {t}
+                  </span>
+                ))}
+                {appliedSpeedFilters.map((s) => (
+                  <span key={`speed-${s}`} className="chip selected">
+                    {s}
+                  </span>
+                ))}
+                {appliedShowAvailableOnly && (
+                  <span className="chip selected">사용 가능만</span>
+                )}
+                {appliedAmenityFilters.map((a) => (
+                  <span key={`amen-${a}`} className="chip selected">
+                    {a}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ▼ 필터 팝다운 */}
+          <div className={`filter-popdown ${filterOpen ? "open" : ""}`}>
+            <div className="pop-inner">
+              <div className="pop-title">
+                {isChargerMode ? "충전소 필터" : "주변 상권 필터"}
+              </div>
+
+              {isChargerMode ? (
+                <>
+                  <div className="pop-section">
+                    <div className="pop-label">커넥터</div>
+                    <div className="chips">
+                      {["DC콤보", "차데모", "AC3상"].map((t) => (
+                        <button
+                          key={t}
+                          className={`chip ${
+                            selectedChargerFilters.includes(t) ? "selected" : ""
+                          }`}
+                          onClick={() =>
+                            toggleFilter(
+                              selectedChargerFilters,
+                              setSelectedChargerFilters,
+                              t
+                            )
+                          }
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pop-section">
+                    <div className="pop-label">충전 속도</div>
+                    <div className="chips">
+                      {["급속 (50kW+)", "완속"].map((s) => (
+                        <button
+                          key={s}
+                          className={`chip ${
+                            selectedSpeedFilters.includes(s) ? "selected" : ""
+                          }`}
+                          onClick={() =>
+                            toggleFilter(
+                              selectedSpeedFilters,
+                              setSelectedSpeedFilters,
+                              s
+                            )
+                          }
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pop-section">
+                    <div className="chips">
+                      <button
+                        className={`chip ${
+                          showAvailableOnly ? "selected" : ""
+                        }`}
+                        onClick={() => setShowAvailableOnly((v) => !v)}
+                      >
+                        사용 가능만
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="pop-section">
+                    <div className="pop-label">범위</div>
+                    <div className="radius-fixed">
+                      <span className="chip selected">반경 500m</span>
+                      <span className="radius-note">현재 위치 기준</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="pop-section">
+                  <div className="pop-label">카테고리</div>
+                  <div className="chips">
+                    {["식당", "카페", "공원", "쇼핑"].map((a) => (
+                      <button
+                        key={a}
+                        className={`chip ${
+                          selectedAmenityFilters.includes(a) ? "selected" : ""
+                        }`}
+                        onClick={() =>
+                          toggleFilter(
+                            selectedAmenityFilters,
+                            setSelectedAmenityFilters,
+                            a
+                          )
+                        }
+                      >
+                        {a}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="pop-actions">
+                <button className="ghost" onClick={resetFilters}>
+                  초기화
+                </button>
+                <button className="primary" onClick={applyFilters}>
+                  적용
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="filter-toggle-buttons">
+        {/* 모드 토글 */}
+        <div className="mode-buttons">
           <button
             className={`filter-button ${isChargerMode ? "active" : ""}`}
             onClick={() => setIsChargerMode(true)}
@@ -232,96 +476,48 @@ export const MapPage = () => {
             주변 상권
           </button>
         </div>
+
+        {/* 메뉴 */}
+        <div className="menu-wrap" ref={menuRef}>
+          <button
+            type="button"
+            className="menu-button"
+            aria-label="메뉴"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            <span className="menu-bars" aria-hidden="true">
+              <span className="bar" />
+              <span className="bar" />
+              <span className="bar" />
+            </span>
+          </button>
+          {menuOpen && (
+            <div className="menu-dropdown">
+              <button
+                className="menu-item-button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  navigate("/");
+                }}
+              >
+                홈페이지
+              </button>
+              <button
+                className="menu-item-button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  navigate("/mypage");
+                }}
+              >
+                마이페이지
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* 필터 사이드바 */}
-      <div className="filter-sidebar">
-        <h3 className="filter-title">
-          {isChargerMode ? "충전소 필터" : "주변 상권 필터"}
-        </h3>
-        {isChargerMode ? (
-          <div className="charger-filters">
-            <div>
-              <label className="filter-label">커넥터 종류</label>
-              <div className="filter-options">
-                {["DC콤보", "차데모", "AC3상"].map((t) => (
-                  <button
-                    key={t}
-                    className={`filter-option-button ${
-                      selectedChargerFilters.includes(t) ? "selected" : ""
-                    }`}
-                    onClick={() =>
-                      toggleFilter(
-                        selectedChargerFilters,
-                        setSelectedChargerFilters,
-                        t
-                      )
-                    }
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="filter-label">충전 속도</label>
-              <div className="filter-options">
-                {["급속 (50kW+)", "완속"].map((s) => (
-                  <button
-                    key={s}
-                    className={`filter-option-button ${
-                      selectedSpeedFilters.includes(s) ? "selected" : ""
-                    }`}
-                    onClick={() =>
-                      toggleFilter(
-                        selectedSpeedFilters,
-                        setSelectedSpeedFilters,
-                        s
-                      )
-                    }
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={showAvailableOnly}
-                  onChange={(e) => setShowAvailableOnly(e.target.checked)}
-                />
-                <span className="checkbox-text">사용 가능한 충전기만</span>
-              </label>
-            </div>
-          </div>
-        ) : (
-          <div className="amenity-filters">
-            <div className="filter-options">
-              {["식당", "카페", "공원", "쇼핑"].map((a) => (
-                <button
-                  key={a}
-                  className={`filter-option-button ${
-                    selectedAmenityFilters.includes(a) ? "selected" : ""
-                  }`}
-                  onClick={() =>
-                    toggleFilter(
-                      selectedAmenityFilters,
-                      setSelectedAmenityFilters,
-                      a
-                    )
-                  }
-                >
-                  {a}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 팝업 */}
+      {/* 팝업(바텀시트) */}
       {selectedAmenityDetails && (
         <div
           className={`popup-container ${selectedAmenityDetails ? "open" : ""}`}
@@ -331,7 +527,6 @@ export const MapPage = () => {
             <div className="amenity-details">
               <div className="popup-header">
                 <div>
-                  {/* 제목 + 빨간 하트 카운트 */}
                   <div
                     style={{
                       display: "flex",
@@ -352,22 +547,20 @@ export const MapPage = () => {
                         fontWeight: 700,
                       }}
                     >
-                      <span
-                        className="material-icons"
-                        style={{ fontSize: 18, color: "#e53935" }}
-                      >
-                        GOOD
-                      </span>
-                      {likeCount}
+                      <span className="heart-ic">❤️</span>
+                      <span className="like-num">{likeCount}</span>
                     </span>
                   </div>
-
                   <p className="popup-subtitle">
                     {getPlaceAddr(selectedAmenityDetails)}
                   </p>
                 </div>
-                <button className="close-button" onClick={handleClosePopup}>
-                  <span className="material-icons">close</span>
+                <button
+                  className="close-button"
+                  onClick={handleClosePopup}
+                  aria-label="닫기"
+                >
+                  X
                 </button>
               </div>
 
@@ -414,12 +607,13 @@ export const MapPage = () => {
                 </div>
               </div>
 
-              {/* 좋아요 버튼 */}
               <button className="recommend-button" onClick={handleLikeClick}>
-                <span className="material-icons">GOOD</span> 좋아요
+                <span className="heart-ic" style={{ marginRight: 6 }}>
+                  ❤️
+                </span>
+                좋아요
               </button>
 
-              {/* 리뷰 작성 / 보기 */}
               <div
                 style={{
                   display: "flex",
@@ -444,7 +638,6 @@ export const MapPage = () => {
                 >
                   리뷰 작성
                 </button>
-
                 <button
                   type="button"
                   onClick={handleListForSelected}
@@ -465,47 +658,6 @@ export const MapPage = () => {
           </div>
         </div>
       )}
-
-      {/* 우측 상단 메뉴(FAB) */}
-      <div className="menu-fab" ref={menuRef}>
-        <button
-          type="button"
-          className="menu-button"
-          aria-label="메뉴"
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((v) => !v)}
-        >
-          <span className="menu-bars" aria-hidden="true">
-            <span className="bar" />
-            <span className="bar" />
-            <span className="bar" />
-          </span>
-        </button>
-        {menuOpen && (
-          <div className="menu-dropdown">
-            <button
-              type="button"
-              className="menu-item-button"
-              onClick={() => {
-                setMenuOpen(false);
-                navigate("/");
-              }}
-            >
-              홈페이지
-            </button>
-            <button
-              type="button"
-              className="menu-item-button"
-              onClick={() => {
-                setMenuOpen(false);
-                navigate("/mypage");
-              }}
-            >
-              마이페이지
-            </button>
-          </div>
-        )}
-      </div>
     </div>
   );
 };
