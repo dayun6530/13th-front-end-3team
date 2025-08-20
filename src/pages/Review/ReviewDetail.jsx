@@ -18,6 +18,7 @@ export const ReviewDetailPage = () => {
   const r = list.find((x) => String(x.id) === String(reviewId));
 
   const fmt = (ts) => new Date(ts).toLocaleString();
+  const photoList = Array.isArray(r?.photos) ? r.photos : [];
 
   if (!r) {
     return (
@@ -92,26 +93,27 @@ export const ReviewDetailPage = () => {
                 <div className={styles.stationAddress}>{meta.addr}</div>
               </div>
 
-              {/* 별점/추천 */}
+              {/* 추천 여부만 표시 */}
               <div className={styles.sectionTitleWrapper}>
-                <div className={styles.sectionTitle}>별점 / 추천</div>
+                <div className={styles.sectionTitle}>추천 여부</div>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
-                <div
-                  className={styles.starRatingButton}
+                <span
                   style={{
-                    backgroundColor: "#00C2AD",
-                    color: "#fff",
-                    borderColor: "#00C2AD",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "6px 10px",
+                    borderRadius: 999,
+                    border: "1px solid #e5e8ea",
+                    background: r.recommend ? "#e8fff7" : "#fff1f1",
+                    color: r.recommend ? "#117e62" : "#9a1e1e",
+                    fontWeight: 700,
+                    fontSize: 12,
                   }}
                 >
-                  <div className={styles.starRatingValue}>⭐ {r.rating}</div>
-                </div>
-                <div className={styles.starRatingButton}>
-                  <div className={styles.starRatingValue}>
-                    {r.recommend ? "추천" : "비추천"}
-                  </div>
-                </div>
+                  {r.recommend ? "추천" : "비추천"}
+                </span>
               </div>
 
               {/* 리뷰 내용 */}
@@ -129,9 +131,40 @@ export const ReviewDetailPage = () => {
                 </div>
               </div>
 
+              {/* 사진 그리드 */}
+              <div className={styles.sectionTitleWrapper}>
+                <div className={styles.sectionTitle}>사진</div>
+              </div>
+              {photoList.length > 0 ? (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fill, minmax(120px, 1fr))",
+                    gap: 10,
+                  }}
+                >
+                  {photoList.map((src, idx) => (
+                    <img
+                      key={idx}
+                      src={src}
+                      alt={`review-photo-${idx}`}
+                      style={{
+                        width: "100%",
+                        height: 120,
+                        objectFit: "cover",
+                        borderRadius: 8,
+                        border: "1px solid #e5e8ea",
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.stationAddress}>사진 없음</p>
+              )}
+
               <p className={styles.stationAddress} style={{ marginTop: 8 }}>
-                사진: {r.photosCount ? `${r.photosCount}장` : "없음"} · 작성일:{" "}
-                {fmt(r.createdAt)}
+                작성일: {fmt(r.createdAt)}
               </p>
 
               {/* 액션 */}

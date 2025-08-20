@@ -9,22 +9,11 @@ export const MapPage = () => {
   // 모드: 충전소 / 주변상권
   const [isChargerMode, setIsChargerMode] = useState(true);
 
-  // 팝업 상세
+  // 선택된 장소 상세 (마커 클릭 또는 사이드바 선택 시)
   const [selectedAmenityDetails, setSelectedAmenityDetails] = useState(null);
 
-  // (팝다운 내부) 선택 중 필터
-  const [selectedChargerFilters, setSelectedChargerFilters] = useState([]);
-  const [selectedSpeedFilters, setSelectedSpeedFilters] = useState([]);
-  const [showAvailableOnly, setShowAvailableOnly] = useState(false);
-  const [selectedAmenityFilters, setSelectedAmenityFilters] = useState([]);
-  const [radiusKm, setRadiusKm] = useState(3); // UI 전용
-
-  // (검색창 아래 칩으로 표시할) 적용된 필터
-  const [appliedChargerFilters, setAppliedChargerFilters] = useState([]);
-  const [appliedSpeedFilters, setAppliedSpeedFilters] = useState([]);
-  const [appliedAmenityFilters, setAppliedAmenityFilters] = useState([]);
-  const [appliedShowAvailableOnly, setAppliedShowAvailableOnly] =
-    useState(false);
+  // 사이드바 (좋아요순 목록)
+  const [showSidebar, setShowSidebar] = useState(false);
 
   // 검색어
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,6 +25,28 @@ export const MapPage = () => {
 
   // 라우팅
   const navigate = useNavigate();
+
+  // ===== 필터(팝다운) 상태들 =====
+  const [selectedChargerFilters, setSelectedChargerFilters] = useState([]);
+  const [selectedSpeedFilters, setSelectedSpeedFilters] = useState([]);
+  const [showAvailableOnly, setShowAvailableOnly] = useState(false);
+  const [selectedAmenityFilters, setSelectedAmenityFilters] = useState([]);
+  const [radiusKm, setRadiusKm] = useState(3); // UI 전용
+
+  // 적용된 필터(검색창 아래 칩에 표시)
+  const [appliedChargerFilters, setAppliedChargerFilters] = useState([]);
+  const [appliedSpeedFilters, setAppliedSpeedFilters] = useState([]);
+  const [appliedAmenityFilters, setAppliedAmenityFilters] = useState([]);
+  const [appliedShowAvailableOnly, setAppliedShowAvailableOnly] =
+    useState(false);
+
+  // 팝다운 열림
+  const [filterOpen, setFilterOpen] = useState(false);
+  const searchGroupRef = useRef(null);
+
+  // 상단 메뉴
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   const AMENITY_RADIUS_M = 500;
 
@@ -60,12 +71,23 @@ export const MapPage = () => {
     return placeId;
   };
 
+  // 좋아요 수
+  const getLikes = (place) => {
+    const pid = getPlaceId(place);
+    const stored = parseInt(localStorage.getItem(`likes:${pid}`) || "0", 10);
+    return Number.isNaN(stored) ? 0 : stored;
+  };
+
+  // 전체 마커 목록
+  const [places, setPlaces] = useState([]);
+
   // 마커 추가
-  const addMarkers = useCallback((map, places) => {
+  const addMarkers = useCallback((map, placeList) => {
     const kakao = window.kakao.maps;
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
-    places.forEach((place) => {
+
+    placeList.forEach((place) => {
       const lat = Number(place.y),
         lng = Number(place.x);
       if (Number.isNaN(lat) || Number.isNaN(lng)) return;
@@ -78,6 +100,8 @@ export const MapPage = () => {
       );
       markersRef.current.push(marker);
     });
+
+    setPlaces(placeList);
   }, []);
 
   // (데모) 충전소 로드
@@ -113,12 +137,7 @@ export const MapPage = () => {
       const center = map.getCenter();
       const y = center.getLat(),
         x = center.getLng();
-      const selected =
-        appliedAmenityFilters[0] || selectedAmenityFilters[0] || "카페";
-      const code = { 식당: "FD6", 카페: "CE7", 공원: "AT4", 쇼핑: "MT1" }[
-        selected
-      ];
-      if (!code) return addMarkers(map, []);
+      const code = "CE7"; // 기본: 카페
       fetch(
         `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=${code}&x=${x}&y=${y}&radius=${AMENITY_RADIUS_M}&size=15`,
         { headers: { Authorization: `KakaoAK ${KAKAO_REST_API_KEY}` } }
@@ -127,15 +146,52 @@ export const MapPage = () => {
         .then((d) => d.documents && addMarkers(map, d.documents))
         .catch((e) => console.error(e));
     },
-    [
-      KAKAO_REST_API_KEY,
-      appliedAmenityFilters,
-      selectedAmenityFilters,
-      addMarkers,
-    ]
+    [KAKAO_REST_API_KEY, addMarkers]
   );
 
-  // 주소 검색
+  // 지도 초기화
+  useEffect(() => {
+    if (!window.kakao?.maps) return;
+    const kakao = window.kakao.maps;
+    mapInstance.current = new kakao.Map(mapContainerRef.current, {
+      center: new kakao.LatLng(37.5802, 126.923),
+      level: 3,
+    });
+    const refresh = () =>
+      isChargerMode
+        ? loadChargers(mapInstance.current)
+        : loadAmenities(mapInstance.current);
+    refresh();
+  }, [isChargerMode, loadChargers, loadAmenities]);
+
+  // 좋아요 처리
+  const [likeCount, setLikeCount] = useState(0);
+  useEffect(() => {
+    if (!selectedAmenityDetails) return;
+    setLikeCount(getLikes(selectedAmenityDetails));
+  }, [selectedAmenityDetails]);
+
+  const handleLikeClick = () => {
+    if (!selectedAmenityDetails) return;
+    const pid = getPlaceId(selectedAmenityDetails);
+    const next = likeCount + 1;
+    localStorage.setItem(`likes:${pid}`, String(next));
+    setLikeCount(next);
+  };
+
+  // 리뷰 작성/목록 이동
+  const handleWriteForSelected = () => {
+    const pid = savePlaceMeta(selectedAmenityDetails);
+    navigate(`/review/new/${pid}`);
+  };
+  const handleListForSelected = () => {
+    const pid = savePlaceMeta(selectedAmenityDetails);
+    const list = JSON.parse(localStorage.getItem(`reviews:${pid}`) || "[]");
+    if (!list.length) return alert("리뷰가 없습니다");
+    navigate(`/reviews/${pid}`);
+  };
+
+  // 검색
   const handleSearch = () => {
     if (!searchQuery) return;
     fetch(
@@ -154,39 +210,13 @@ export const MapPage = () => {
       });
   };
 
-  // 지도 초기화
-  useEffect(() => {
-    if (!window.kakao?.maps) return;
-    const kakao = window.kakao.maps;
-    mapInstance.current = new kakao.Map(mapContainerRef.current, {
-      center: new kakao.LatLng(37.5802, 126.923),
-      level: 3,
-    });
-    const refresh = () =>
-      isChargerMode
-        ? loadChargers(mapInstance.current)
-        : loadAmenities(mapInstance.current);
-    const onDragEnd = () =>
-      !isChargerMode && loadAmenities(mapInstance.current);
-    refresh();
-    kakao.event.addListener(mapInstance.current, "dragend", onDragEnd);
-    return () =>
-      kakao.event.removeListener(mapInstance.current, "dragend", onDragEnd);
-  }, [isChargerMode, loadChargers, loadAmenities]);
-
-  // 팝다운
-  const [filterOpen, setFilterOpen] = useState(false);
-  const searchGroupRef = useRef(null);
+  // 팝다운 외부 클릭/ESC 닫기
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && setFilterOpen(false);
     const onClick = (e) => {
       if (!filterOpen) return;
-      if (
-        searchGroupRef.current &&
-        !searchGroupRef.current.contains(e.target)
-      ) {
+      if (searchGroupRef.current && !searchGroupRef.current.contains(e.target))
         setFilterOpen(false);
-      }
     };
     window.addEventListener("keydown", onKey);
     document.addEventListener("mousedown", onClick);
@@ -196,11 +226,21 @@ export const MapPage = () => {
     };
   }, [filterOpen]);
 
-  // 유틸
+  // 메뉴 외부 클릭 닫기
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDoc = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target))
+        setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [menuOpen]);
+
+  // 필터 유틸 & 적용/초기화
   const toggleFilter = (filters, setFilters, v) =>
     filters.includes(v) ? setFilters([]) : setFilters([v]);
 
-  // 적용: 선택 상태 → 적용 상태 복사 (검색창 아래 칩 표시)
   const applyFilters = () => {
     if (isChargerMode) {
       setAppliedChargerFilters([...selectedChargerFilters]);
@@ -212,7 +252,6 @@ export const MapPage = () => {
     setFilterOpen(false);
   };
 
-  // 초기화: 선택/적용 모두 비우기 (칩도 숨김)
   const resetFilters = () => {
     setSelectedChargerFilters([]);
     setSelectedSpeedFilters([]);
@@ -226,55 +265,16 @@ export const MapPage = () => {
     setAppliedShowAvailableOnly(false);
   };
 
-  const handleClosePopup = () => setSelectedAmenityDetails(null);
-
-  // 리뷰 작성/목록 이동
-  const handleWriteForSelected = () => {
-    const pid = savePlaceMeta(selectedAmenityDetails);
-    navigate(`/review/new/${pid}`);
-  };
-  const handleListForSelected = () => {
-    const pid = savePlaceMeta(selectedAmenityDetails);
-    const list = JSON.parse(localStorage.getItem(`reviews:${pid}`) || "[]");
-    if (!list.length) return alert("리뷰가 없습니다");
-    navigate(`/reviews/${pid}`);
-  };
-
-  // 상단 메뉴
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef(null);
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onDoc = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target))
-        setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [menuOpen]);
-
-  // 좋아요
-  const [likeCount, setLikeCount] = useState(0);
-  useEffect(() => {
-    if (!selectedAmenityDetails) return;
-    const pid = getPlaceId(selectedAmenityDetails);
-    const stored = parseInt(localStorage.getItem(`likes:${pid}`) || "0", 10);
-    setLikeCount(Number.isNaN(stored) ? 0 : stored);
-  }, [selectedAmenityDetails]);
-  const handleLikeClick = () => {
-    if (!selectedAmenityDetails) return;
-    const pid = getPlaceId(selectedAmenityDetails);
-    const next = likeCount + 1;
-    localStorage.setItem(`likes:${pid}`, String(next));
-    setLikeCount(next);
-  };
-
-  // 적용된 칩 존재 여부
   const hasAnyApplied =
     appliedChargerFilters.length > 0 ||
     appliedSpeedFilters.length > 0 ||
     appliedAmenityFilters.length > 0 ||
     appliedShowAvailableOnly;
+
+  // 좋아요순 정렬
+  const sortedPlaces = [...places].sort((a, b) => getLikes(b) - getLikes(a));
+
+  const handleClosePopup = () => setSelectedAmenityDetails(null);
 
   return (
     <div className="map-page-container">
@@ -322,7 +322,7 @@ export const MapPage = () => {
             </button>
           </div>
 
-          {/* ▼ 오버레이 칩: 검색창을 밀지 않음 (absolute) */}
+          {/* 오버레이 칩 */}
           {hasAnyApplied && (
             <div className="applied-chips-overlay">
               <div className="chips" style={{ flexWrap: "wrap", gap: 8 }}>
@@ -348,7 +348,7 @@ export const MapPage = () => {
             </div>
           )}
 
-          {/* ▼ 필터 팝다운 */}
+          {/* 필터 팝다운 */}
           <div className={`filter-popdown ${filterOpen ? "open" : ""}`}>
             <div className="pop-inner">
               <div className="pop-title">
@@ -517,11 +517,31 @@ export const MapPage = () => {
         </div>
       </div>
 
-      {/* 팝업(바텀시트) */}
+      {/* ===== 좌측 사이드바 (좋아요순 목록) ===== */}
+      {showSidebar && (
+        <div className="sidebar">
+          <h3>인기 장소</h3>
+          <ul>
+            {sortedPlaces.map((place) => (
+              <li
+                key={getPlaceId(place)}
+                className="sidebar-item"
+                onClick={() => {
+                  setSelectedAmenityDetails(place);
+                  setShowSidebar(false);
+                }}
+              >
+                <p className="place-name">{getPlaceName(place)}</p>
+                <p className="place-addr">{getPlaceAddr(place)}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* ===== 하단 팝업(바텀시트) ===== */}
       {selectedAmenityDetails && (
-        <div
-          className={`popup-container ${selectedAmenityDetails ? "open" : ""}`}
-        >
+        <div className={`popup-container open`}>
           <div className="popup-handle" onClick={handleClosePopup} />
           <div className="popup-content">
             <div className="amenity-details">
@@ -570,6 +590,10 @@ export const MapPage = () => {
                 className="amenity-image"
               />
 
+              {/* =======================
+                  👇 가운데 아래 정보 카드(4칸)
+                  (카테고리/전화번호/운영시간/홈페이지)
+              ======================= */}
               <div className="amenity-info-grid">
                 <div className="amenity-info-item">
                   <p className="info-label">카테고리</p>
@@ -606,6 +630,9 @@ export const MapPage = () => {
                   </p>
                 </div>
               </div>
+              {/* =======================
+                  👆 가운데 아래 정보 카드(끝)
+              ======================= */}
 
               <button className="recommend-button" onClick={handleLikeClick}>
                 <span className="heart-ic" style={{ marginRight: 6 }}>
@@ -657,6 +684,16 @@ export const MapPage = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 좌측 목록 열기 버튼 */}
+      {!showSidebar && !selectedAmenityDetails && (
+        <button
+          className="open-sidebar-btn"
+          onClick={() => setShowSidebar(true)}
+        >
+          📂 인기 목록 보기
+        </button>
       )}
     </div>
   );
