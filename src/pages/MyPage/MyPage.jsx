@@ -7,6 +7,7 @@ export const MyPage = () => {
   // 첫 번째 충전소(그린 에너지 충전소)에 대한 리뷰 작성 여부 체크
   const reviewed = Boolean(localStorage.getItem("review:station-green-energy"));
 
+  
   return (
     <div className={styles.myPageContainer}>
       <div className={styles.contentWrapper}>

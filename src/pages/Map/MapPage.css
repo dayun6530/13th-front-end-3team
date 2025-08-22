@@ -512,3 +512,97 @@
   box-shadow: var(--shadow-1);
   */
 }
+
+/* ===== 사이드바 (좋아요순 목록) ===== */
+.sidebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 280px;
+  height: 100%;
+  background: #fff;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.2);
+  padding: 16px;
+  overflow-y: auto;
+  z-index: 1001;
+}
+.sidebar h3 {
+  margin: 0 0 12px;
+}
+.sidebar-item {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+.sidebar-item:hover {
+  background: #f8fbff;
+}
+.place-name {
+  font-weight: bold;
+}
+.place-addr {
+  font-size: 13px;
+  color: #666;
+}
+
+/* ===== 상세 팝업 (오른쪽) ===== */
+.detail-popup {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100%;
+  background: #fff;
+  box-shadow: -2px 0 6px rgba(0, 0, 0, 0.2);
+  padding: 16px;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+}
+.detail-popup h2 {
+  margin: 0 0 4px;
+}
+.detail-popup p {
+  margin: 4px 0;
+}
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  align-self: flex-end;
+  cursor: pointer;
+}
+.actions {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+}
+.actions button {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: #007bff;
+  color: #fff;
+  cursor: pointer;
+}
+.actions button:hover {
+  filter: brightness(0.95);
+}
+
+/* ===== 사이드바 열기 버튼 ===== */
+.open-sidebar-btn {
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  padding: 10px 16px;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  z-index: 1001;
+}
+.open-sidebar-btn:hover {
+  filter: brightness(0.95);
+}

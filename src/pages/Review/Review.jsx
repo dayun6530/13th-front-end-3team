@@ -68,22 +68,6 @@ export const ReviewPage = () => {
               </div>
 
               <div className={styles.sectionTitleWrapper}>
-                <div className={styles.sectionTitle}>별점</div>
-              </div>
-              <div className={styles.starRatingSection}>
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <div
-                    key={n}
-                    className={styles.starRatingButton}
-                    style={rating >= n ? selectedStar : undefined}
-                    onClick={() => setRating(n)}
-                  >
-                    <div className={styles.starRatingValue}>{n}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div className={styles.sectionTitleWrapper}>
                 <div className={styles.sectionTitle}>추천 여부</div>
               </div>
               <div className={styles.recommendationSection}>
