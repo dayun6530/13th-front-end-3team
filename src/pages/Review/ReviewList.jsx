@@ -1,13 +1,16 @@
 // src/pages/Review/ReviewList.jsx
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import styles from "./Review.module.css";
 
 const getMeta = (placeId) =>
   JSON.parse(localStorage.getItem(`place:${placeId}`) || "null");
 
-const getList = (placeId) =>
+const readList = (placeId) =>
   JSON.parse(localStorage.getItem(`reviews:${placeId}`) || "[]");
+
+const writeList = (placeId, list) =>
+  localStorage.setItem(`reviews:${placeId}`, JSON.stringify(list));
 
 export const ReviewListPage = () => {
   const { placeId } = useParams();
@@ -17,10 +20,39 @@ export const ReviewListPage = () => {
     name: "이름 정보 없음",
     addr: "주소 정보 없음",
   };
-  const list = getList(placeId);
 
-  const snippet = (t) => (t.length > 40 ? t.slice(0, 40) + "…" : t);
-  const fmt = (ts) => new Date(ts).toLocaleString();
+  const [list, setList] = useState([]);
+
+  // 최초 로드 + 정렬(좋아요 내림차순), 기존 데이터에 likes가 없다면 0으로 채움
+  useEffect(() => {
+    const raw = readList(placeId).map((r) => ({
+      likes: 0,
+      ...r, // 기존 rating/recommend가 남아있어도 무시(표시 안 함)
+    }));
+    raw.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+    setList(raw);
+  }, [placeId]);
+
+  const snippet = (t = "") => (t.length > 40 ? t.slice(0, 40) + "…" : t);
+  const fmt = (ts) =>
+    ts ? new Date(ts).toLocaleString() : new Date().toLocaleString();
+
+  // ✅ 좋아요 기능: 목록에서 바로 +1
+  const likeReview = (id, e) => {
+    e.preventDefault(); // Link 클릭 전파 방지
+    e.stopPropagation();
+
+    const fresh = readList(placeId).map((r) => ({ likes: 0, ...r }));
+    const idx = fresh.findIndex((r) => r.id === id);
+    if (idx < 0) return;
+
+    fresh[idx].likes = (fresh[idx].likes || 0) + 1;
+
+    // 저장 후 "좋아요 많은 순"으로 재정렬
+    fresh.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+    writeList(placeId, fresh);
+    setList(fresh);
+  };
 
   // 리뷰가 없을 때
   if (!list.length) {
@@ -71,7 +103,6 @@ export const ReviewListPage = () => {
                   </button>
                 </div>
 
-                {/* 지도로 가기 버튼 (없을 때도 제공) */}
                 <div className={styles.submitButtonSection}>
                   <Link to="/map" className={styles.submitReviewButton}>
                     <div className={styles.buttonTextWrapper}>
@@ -81,6 +112,7 @@ export const ReviewListPage = () => {
                 </div>
               </div>
             </div>
+            {/* end empty */}
           </div>
         </div>
       </div>
@@ -110,47 +142,70 @@ export const ReviewListPage = () => {
               </div>
 
               <div className={styles.sectionTitleWrapper}>
-                <div className={styles.sectionTitle}>리뷰 목록</div>
+                <div className={styles.sectionTitle}>
+                  리뷰 목록{" "}
+                  <span style={{ color: "#637787" }}>(좋아요 많은 순)</span>
+                </div>
               </div>
 
               <div
                 style={{ display: "flex", flexDirection: "column", gap: 12 }}
               >
-                {list
-                  .sort((a, b) => b.createdAt - a.createdAt)
-                  .map((r) => (
+                {list.map((r) => (
+                  <div
+                    key={r.id}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      padding: "12px 14px",
+                      border: "1px solid #e5e8ea",
+                      borderRadius: 12,
+                      background: "#fff",
+                    }}
+                  >
+                    {/* 왼쪽: 텍스트 → 상세로 이동 */}
                     <Link
-                      key={r.id}
                       to={`/reviews/${placeId}/${r.id}`}
                       style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 12,
-                        padding: "12px 14px",
-                        border: "1px solid #e5e8ea",
-                        borderRadius: 12,
+                        flex: 1,
                         textDecoration: "none",
                         color: "inherit",
-                        background: "#fff",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 6,
                       }}
                     >
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 6,
-                        }}
-                      >
-                        <div style={{ fontWeight: 700 }}>
-                          ⭐ {r.rating}점 · {r.recommend ? "추천" : "비추천"}
-                        </div>
-                        <div style={{ color: "#444" }}>{snippet(r.text)}</div>
-                      </div>
+                      <div style={{ color: "#444" }}>{snippet(r.text)}</div>
                       <div style={{ whiteSpace: "nowrap", color: "#637787" }}>
                         {fmt(r.createdAt)}
                       </div>
                     </Link>
-                  ))}
+
+                    {/* 오른쪽: 좋아요 버튼 */}
+                    <button
+                      onClick={(e) => likeReview(r.id, e)}
+                      title="좋아요"
+                      style={{
+                        alignSelf: "flex-start",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "8px 10px",
+                        borderRadius: 10,
+                        border: "1px solid #e5e8ea",
+                        background: "#fff",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <span role="img" aria-label="heart">
+                        ❤️
+                      </span>
+                      <span style={{ fontWeight: 700 }}>{r.likes || 0}</span>
+                    </button>
+                  </div>
+                ))}
               </div>
 
               {/* 리뷰 추가 작성 */}
@@ -165,7 +220,7 @@ export const ReviewListPage = () => {
                 </Link>
               </div>
 
-              {/* ⬇️ 요청: "리뷰 추가 작성" 밑에 지도로 가기 버튼 */}
+              {/* 지도로 가기 */}
               <div className={styles.submitButtonSection}>
                 <Link to="/map" className={styles.submitReviewButton}>
                   <div className={styles.buttonTextWrapper}>
