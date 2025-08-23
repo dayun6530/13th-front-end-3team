@@ -1,21 +1,16 @@
 // src/pages/Review/ReviewList.jsx
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import styles from "./Review.module.css";
 
 const getMeta = (placeId) =>
   JSON.parse(localStorage.getItem(`place:${placeId}`) || "null");
 
-const getList = (placeId) =>
+const readList = (placeId) =>
   JSON.parse(localStorage.getItem(`reviews:${placeId}`) || "[]");
 
-// [수정] 사진이 없는 리뷰를 위해 임시 썸네일 소스(원하면 삭제/교체 가능)
-const FALLBACK_PHOTOS = [
-  "https://images.unsplash.com/photo-1502877338535-766e1452684a",
-  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee",
-  "https://images.unsplash.com/photo-1520975916090-3105956dac38",
-  "https://images.unsplash.com/photo-1520975693416-35a2b48510d3",
-];
+const writeList = (placeId, list) =>
+  localStorage.setItem(`reviews:${placeId}`, JSON.stringify(list));
 
 export const ReviewListPage = () => {
   const { placeId } = useParams();
@@ -25,22 +20,42 @@ export const ReviewListPage = () => {
     name: "이름 정보 없음",
     addr: "주소 정보 없음",
   };
-  const list = getList(placeId);
 
-  const snippet = (t) => (t?.length > 90 ? t.slice(0, 90) + "…" : t || "");
-  const fmt = (ts) => new Date(ts).toLocaleString();
+  const [list, setList] = useState([]);
 
-  // ✅ 추천 먼저, 같은 추천 그룹 내에서는 최신순(작성일 내림차순)
-  const sorted = [...list].sort((a, b) => {
-    if (a.recommend === b.recommend) {
-      return (b.createdAt || 0) - (a.createdAt || 0);
-    }
-    // true 먼저
-    return a.recommend ? -1 : 1;
-  });
+  // 최초 로드 + 정렬(좋아요 내림차순), 기존 데이터에 likes가 없다면 0으로 채움
+  useEffect(() => {
+    const raw = readList(placeId).map((r) => ({
+      likes: 0,
+      ...r, // 기존 rating/recommend가 남아있어도 무시(표시 안 함)
+    }));
+    raw.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+    setList(raw);
+  }, [placeId]);
+
+  const snippet = (t = "") => (t.length > 40 ? t.slice(0, 40) + "…" : t);
+  const fmt = (ts) =>
+    ts ? new Date(ts).toLocaleString() : new Date().toLocaleString();
+
+  // ✅ 좋아요 기능: 목록에서 바로 +1
+  const likeReview = (id, e) => {
+    e.preventDefault(); // Link 클릭 전파 방지
+    e.stopPropagation();
+
+    const fresh = readList(placeId).map((r) => ({ likes: 0, ...r }));
+    const idx = fresh.findIndex((r) => r.id === id);
+    if (idx < 0) return;
+
+    fresh[idx].likes = (fresh[idx].likes || 0) + 1;
+
+    // 저장 후 "좋아요 많은 순"으로 재정렬
+    fresh.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+    writeList(placeId, fresh);
+    setList(fresh);
+  };
 
   // 리뷰가 없을 때
-  if (!sorted.length) {
+  if (!list.length) {
     return (
       <div className={styles.reviewPageContainer}>
         <div className={styles.headerWrapper}>
@@ -127,137 +142,74 @@ export const ReviewListPage = () => {
               </div>
 
               <div className={styles.sectionTitleWrapper}>
-                <div className={styles.sectionTitle}>리뷰 목록</div>
+                <div className={styles.sectionTitle}>
+                  리뷰 목록{" "}
+                  <span style={{ color: "#637787" }}>(좋아요 많은 순)</span>
+                </div>
               </div>
 
-              {/* ✅ 카드형 목록 */}
-              <div style={{ display: "grid", gap: 12 }}>
-                {sorted.map((r) => {
-                  // [수정] 안전한 사진 배열 준비: r.photos(배열) 우선, 없으면 photosCount로 FALLBACK_PHOTOS에서 채움
-                  const photos = Array.isArray(r.photos)
-                    ? r.photos
-                    : r.photosCount && r.photosCount > 0
-                    ? FALLBACK_PHOTOS.slice(0, r.photosCount)
-                    : [];
-
-                  return (
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 12 }}
+              >
+                {list.map((r) => (
+                  <div
+                    key={r.id}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      padding: "12px 14px",
+                      border: "1px solid #e5e8ea",
+                      borderRadius: 12,
+                      background: "#fff",
+                    }}
+                  >
+                    {/* 왼쪽: 텍스트 → 상세로 이동 */}
                     <Link
-                      key={r.id}
                       to={`/reviews/${placeId}/${r.id}`}
                       style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr auto",
-                        gap: 12,
-                        padding: "14px 16px",
-                        border: "1px solid #e5e8ea",
-                        borderRadius: 12,
+                        flex: 1,
                         textDecoration: "none",
                         color: "inherit",
-                        background: "#fff",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 6,
                       }}
                     >
-                      <div style={{ display: "grid", gap: 8 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          {/* 추천/비추천 배지 */}
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 6,
-                              padding: "6px 10px",
-                              borderRadius: 999,
-                              border: "1px solid #e5e8ea",
-                              background: r.recommend ? "#e8fff7" : "#fff1f1",
-                              color: r.recommend ? "#117e62" : "#9a1e1e",
-                              fontWeight: 700,
-                              fontSize: 12,
-                            }}
-                          >
-                            {r.recommend ? "추천" : "비추천"}
-                          </span>
-
-                          {/* 사진 수 표시 */}
-                          <span
-                            style={{
-                              marginLeft: 4,
-                              fontSize: 12,
-                              color: "#637787",
-                            }}
-                          >
-                            {photos.length > 0
-                              ? `사진 ${photos.length}장`
-                              : "사진 없음"}
-                          </span>
-                        </div>
-
-                        {/* 내용 스니펫 */}
-                        <div style={{ color: "#333", lineHeight: 1.5 }}>
-                          {snippet(r.text)}
-                        </div>
-
-                        {/* [수정] 썸네일 프리뷰(최대 3장) — 기존 thumbs 참조를 photos로 교체 */}
-                        {photos.length > 0 && (
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns:
-                                "repeat(auto-fill, minmax(72px, 1fr))",
-                              gap: 8,
-                            }}
-                          >
-                            {photos.slice(0, 3).map((src, idx) => (
-                              <img
-                                key={idx}
-                                src={src}
-                                alt={`thumb-${idx}`}
-                                style={{
-                                  width: "100%",
-                                  height: 72,
-                                  objectFit: "cover",
-                                  borderRadius: 8,
-                                  border: "1px solid #e5e8ea",
-                                }}
-                              />
-                            ))}
-                          </div>
-                        )}
-
-                        {/* 작성일 */}
-                        <div style={{ color: "#637787", fontSize: 12 }}>
-                          {fmt(r.createdAt)}
-                        </div>
+                      <div style={{ color: "#444" }}>{snippet(r.text)}</div>
+                      <div style={{ whiteSpace: "nowrap", color: "#637787" }}>
+                        {fmt(r.createdAt)}
                       </div>
-
-                      {/* 자세히 보기 텍스트(오른쪽 정렬) */}
-                      {/*<div
-                        style={{
-                          whiteSpace: "nowrap",
-                          alignSelf: "center",
-                          color: "#00C2AD",
-                          fontWeight: 700,
-                          fontSize: 14,
-                        }}
-                      >
-                        자세히 보기 →
-                      </div>
-                      */}
                     </Link>
-                  );
-                })}
+
+                    {/* 오른쪽: 좋아요 버튼 */}
+                    <button
+                      onClick={(e) => likeReview(r.id, e)}
+                      title="좋아요"
+                      style={{
+                        alignSelf: "flex-start",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "8px 10px",
+                        borderRadius: 10,
+                        border: "1px solid #e5e8ea",
+                        background: "#fff",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <span role="img" aria-label="heart">
+                        ❤️
+                      </span>
+                      <span style={{ fontWeight: 700 }}>{r.likes || 0}</span>
+                    </button>
+                  </div>
+                ))}
               </div>
 
-              {/* 리뷰 추가 작성 & 지도로 가기 */}
-              <div
-                className={styles.submitButtonSection}
-                style={{ marginTop: 12 }}
-              >
+              {/* 리뷰 추가 작성 */}
+              <div className={styles.submitButtonSection}>
                 <Link
                   to={`/review/new/${placeId}`}
                   className={styles.submitReviewButton}
@@ -268,6 +220,7 @@ export const ReviewListPage = () => {
                 </Link>
               </div>
 
+              {/* 지도로 가기 */}
               <div className={styles.submitButtonSection}>
                 <Link to="/map" className={styles.submitReviewButton}>
                   <div className={styles.buttonTextWrapper}>
