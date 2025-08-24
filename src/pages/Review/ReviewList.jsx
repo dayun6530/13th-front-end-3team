@@ -34,27 +34,36 @@ const cacheRead = (placeId) =>
  * - { summary: string } 또는 { content: string } → 줄바꿈/구분점 기준 분리
  * - ["문장1","문장2"] 같은 배열 그대로
  */
+// src/pages/Review/ReviewList.jsx
+
+// 이 함수 전체를 교체해주세요.
 const normalizeSummary = (data) => {
   if (!data) return [];
-  const arrs =
-    data.items ||
-    data.sentences ||
-    data.bullets ||
-    (Array.isArray(data) ? data : null);
 
-  if (Array.isArray(arrs)) {
-    return arrs
-      .map((v) => (typeof v === "string" ? v.trim() : ""))
-      .filter(Boolean);
+  // 1. data 객체에서 실제 텍스트를 먼저 추출합니다.
+  const rawText = (data.summary || data.content || data.text || "").trim();
+  if (!rawText) return [];
+
+  let cleanText = rawText;
+
+  // 2. API 응답에 "content=" 마커가 포함된 경우, 그 이후 내용만 잘라냅니다.
+  const contentMarker = "content=";
+  const contentIndex = rawText.indexOf(contentMarker);
+
+  if (rawText.startsWith("{status=") && contentIndex !== -1) {
+    // "content=" 다음부터 문자열을 잘라냅니다.
+    cleanText = rawText.substring(contentIndex + contentMarker.length);
   }
 
-  const text = (data.summary || data.content || data.text || "").trim();
-  if (!text) return [];
-  // 불릿/줄바꿈/구분 점자를 기준으로 분리
-  const parts = text
+  // 3. 정리된 텍스트(cleanText)를 기반으로 줄바꿈/불릿 기준으로 분리합니다.
+  const parts = cleanText
     .split(/\r?\n|[•·\-–]\s+|(?<=\.)\s+/g)
-    .map((s) => s.trim())
-    .filter(Boolean);
+    .map((s) => {
+      // 텍스트 끝에 남아있을 수 있는 괄호나 공백을 추가로 제거합니다.
+      return s.trim().replace(/[\s}]+$/, "");
+    })
+    .filter(Boolean); // 빈 줄을 최종적으로 제거합니다.
+
   return parts;
 };
 
