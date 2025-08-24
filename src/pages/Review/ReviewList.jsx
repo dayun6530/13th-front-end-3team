@@ -25,16 +25,52 @@ const cacheRead = (placeId) =>
     JSON.parse(localStorage.getItem(`reviews:${placeId}`) || "[]")
   );
 
+// ---------- 요약 응답 정규화 ----------
+/**
+ * SummaryResponse 다양한 형태 방어적 파싱:
+ * - { items: string[] }
+ * - { sentences: string[] }
+ * - { bullets: string[] }
+ * - { summary: string } 또는 { content: string } → 줄바꿈/구분점 기준 분리
+ * - ["문장1","문장2"] 같은 배열 그대로
+ */
+const normalizeSummary = (data) => {
+  if (!data) return [];
+  const arrs =
+    data.items ||
+    data.sentences ||
+    data.bullets ||
+    (Array.isArray(data) ? data : null);
+
+  if (Array.isArray(arrs)) {
+    return arrs
+      .map((v) => (typeof v === "string" ? v.trim() : ""))
+      .filter(Boolean);
+  }
+
+  const text = (data.summary || data.content || data.text || "").trim();
+  if (!text) return [];
+  // 불릿/줄바꿈/구분 점자를 기준으로 분리
+  const parts = text
+    .split(/\r?\n|[•·\-–]\s+|(?<=\.)\s+/g)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return parts;
+};
+
 // ---------- 요약 카드 ----------
 function ReviewSummaryCard({ placeId }) {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
   const [error, setError] = useState(null);
-  const DEMO_MODE = true;
+
+  // env 로 데모모드 토글 가능: VITE_SUMMARY_DEMO=1 이면 데모
+  const DEMO_MODE = import.meta.env.VITE_SUMMARY_DEMO === "1";
 
   const load = async () => {
     setLoading(true);
     setError(null);
+
     if (DEMO_MODE) {
       setTimeout(() => {
         setItems([
@@ -48,8 +84,18 @@ function ReviewSummaryCard({ placeId }) {
       }, 350);
       return;
     }
-    setItems([]);
-    setLoading(false);
+
+    try {
+      // 백엔드: GET /api/map/{statId}/summary
+      const { data } = await api.get(`/api/map/${placeId}/summary`);
+      const lines = normalizeSummary(data).slice(0, 5);
+      setItems(lines);
+    } catch (e) {
+      console.error("[요약 불러오기 실패]", e);
+      setError("요약을 불러오는 중 문제가 발생했어요.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -136,7 +182,7 @@ function ReviewSummaryCard({ placeId }) {
         <>
           {items.length ? (
             <ul style={{ margin: "6px 0 0 16px", padding: 0, lineHeight: 1.6 }}>
-              {items.slice(0, 5).map((line, idx) => (
+              {items.map((line, idx) => (
                 <li key={idx} style={{ marginBottom: 6, color: "#333" }}>
                   {line}
                 </li>
@@ -263,9 +309,6 @@ export const ReviewListPage = () => {
       localStorage.setItem(`liked:${placeId}:${id}`, "1");
 
       // 최신 목록을 로컬 캐시에 저장(상세와 합산 위해)
-      const nextList = ((prev) => prev)();
-      // trick: 최신 list를 가져오기 위해 setList의 콜백을 쓰지 못하니, 상태를 한 번 읽어 써준다.
-      // 위 trick 대신 현재 상태의 list를 그대로 저장
       cacheWrite(
         placeId,
         list.map((r) => {
@@ -523,7 +566,7 @@ export const ReviewListPage = () => {
                     >
                       <Link
                         to={`/reviews/${placeId}/${id}`}
-                        state={{ review: r }} // 상세로 원본 전달(미스매치 방지)
+                        state={{ review: r }} // 상세로 원본 전달
                         style={{
                           flex: 1,
                           textDecoration: "none",
