@@ -1,19 +1,32 @@
+// src/api/axios.js
 import axios from "axios";
 
-// axios 인스턴스 생성
 const instance = axios.create({
-  baseURL: "https://chargebuddy.digital",
-  timeout: 5000, // 5초 타임아웃
+  baseURL: import.meta.env.VITE_API_BASE_URL || "https://chargebuddy.digital",
+  timeout: 10000,
+  headers: { "Content-Type": "application/json", Accept: "application/json" },
 });
 
-// 응답 인터셉터 추가
 instance.interceptors.response.use(
-  (res) => {
-    console.log("[응답 성공]", res);
-    return res;
-  },
+  (res) => res,
   (err) => {
-    console.error("[응답 에러]", err);
+    const { config, response, message } = err || {};
+    const url = `${config?.baseURL || ""}${config?.url || ""}`;
+    const status = response?.status;
+    // data가 문자열/Blob/객체 등 어떤 형태든 프린트 가능하게 가공
+    let payload = response?.data;
+    try {
+      if (payload && typeof payload !== "string") {
+        payload = JSON.stringify(payload);
+      }
+    } catch (_) {
+      // stringify 실패시 원본 유지
+    }
+    console.error(
+      `[응답 에러] ${config?.method?.toUpperCase()} ${url} -> ${
+        status || "NO_STATUS"
+      } | ${message || ""}\n` + `Response: ${payload || "(no body)"}`
+    );
     return Promise.reject(err);
   }
 );
