@@ -98,6 +98,25 @@ export const MapPage = () => {
     markersRef.current = [];
   };
 
+  // 상단 state들 근처에 추가
+  const [likeCount, setLikeCount] = useState(0);
+  const [isLiking, setIsLiking] = useState(false);
+
+  useEffect(() => {
+    if (!selectedAmenityDetails) return;
+    const pid = getPlaceId(selectedAmenityDetails);
+
+    if (
+      selectedAmenityDetails.__ctx === "station" &&
+      typeof selectedAmenityDetails.likes === "number"
+    ) {
+      setLikeCount(selectedAmenityDetails.likes);
+    } else {
+      const stored = parseInt(localStorage.getItem(`likes:${pid}`) || "0", 10);
+      setLikeCount(Number.isNaN(stored) ? 0 : stored);
+    }
+  }, [selectedAmenityDetails]);
+
   // map shape: 'charger' | 'amenity'
   const addMarkers = useCallback((map, places, ctx, shape) => {
     if (!window.kakao) return;
@@ -282,7 +301,7 @@ export const MapPage = () => {
   };
 
   // 좋아요(로컬) + 서버가 있으면 함께 시도
-  const [likeCount, setLikeCount] = useState(0);
+  //const [likeCount, setLikeCount] = useState(0);
   useEffect(() => {
     if (!selectedAmenityDetails) return;
     const pid = getPlaceId(selectedAmenityDetails);
@@ -290,26 +309,40 @@ export const MapPage = () => {
     setLikeCount(Number.isNaN(stored) ? 0 : stored);
   }, [selectedAmenityDetails]);
 
-  const incLocalLike = (pid) => {
-    const next = likeCount + 1;
+  // 기존 handleLikeClick 대체
+  const incLocalLike = (pid, nextCount) => {
+    const next = typeof nextCount === "number" ? nextCount : likeCount + 1;
     localStorage.setItem(`likes:${pid}`, String(next));
     setLikeCount(next);
+    setSelectedAmenityDetails((prev) =>
+      prev ? { ...prev, likes: next } : prev
+    );
   };
 
   const handleLikeClick = async () => {
-    if (!selectedAmenityDetails) return;
+    if (!selectedAmenityDetails || isLiking) return;
     const pid = getPlaceId(selectedAmenityDetails);
 
-    if (selectedAmenityDetails.__ctx === "station" && api) {
-      try {
-        await api.post(`/api/map/${pid}/like`);
+    setIsLiking(true);
+    try {
+      if (selectedAmenityDetails.__ctx === "station") {
+        // 🔗 백엔드 연동: 충전소 좋아요
+        const { data } = await api.post(`/api/map/${pid}/like`);
+        if (data && typeof data.likes === "number") {
+          incLocalLike(pid, data.likes); // 서버 값으로 동기화
+        } else {
+          incLocalLike(pid); // 응답 형식 모를 때 폴백
+        }
+      } else {
+        // 주변 상권은 서버 연동 없이 로컬만
         incLocalLike(pid);
-        return;
-      } catch (e) {
-        console.warn("서버 좋아요 실패, 로컬 반영:", e);
       }
+    } catch (e) {
+      console.warn("서버 좋아요 실패(로컬 반영):", e);
+      incLocalLike(pid);
+    } finally {
+      setIsLiking(false);
     }
-    incLocalLike(pid);
   };
 
   // 외부 클릭으로 필터 닫기
