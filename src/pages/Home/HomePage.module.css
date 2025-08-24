@@ -1,0 +1,142 @@
+/* src/pages/Home/HomePage.module.css */
+@import url("https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap");
+
+.container {
+  font-family: "Pretendard", sans-serif;
+  background-color: #f5f7fb;
+  color: #111416;
+  padding: 40px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ===== 서비스 소개 섹션 ===== */
+.introSection {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.headline {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #3f51b5;
+  line-height: 1.3;
+  margin-bottom: 1rem;
+}
+
+.subtext {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #637787;
+}
+
+.iconGroup {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-top: 32px;
+}
+
+.iconWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+.featureIcon {
+  width: 50px;
+  height: 50px;
+}
+
+/* ===== 핵심 기능 강조 섹션 ===== */
+.featuresSection {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  margin-bottom: 60px;
+}
+
+.featureCard {
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 8px 24px rgba(18, 23, 31, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.featureTitle {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #0c141c;
+  margin-bottom: 10px;
+}
+
+.featureDescription {
+  font-size: 1rem;
+  color: #637787;
+  margin-bottom: 24px;
+  max-width: 600px;
+}
+
+.featureImage {
+  width: 100%;
+  max-width: 800px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== 행동 유도 섹션 ===== */
+.ctaSection {
+  text-align: center;
+}
+
+.ctaHeadline {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #3f51b5;
+  margin-bottom: 24px;
+}
+
+.ctaButton {
+  display: inline-block;
+  padding: 16px 40px;
+  background: linear-gradient(180deg, #baf0de, #a7e8d1);
+  color: #0c141c;
+  font-weight: 800;
+  font-size: 1.1rem;
+  text-decoration: none;
+  border-radius: 12px;
+  border: 1px solid #77dfc7;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.ctaButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 반응형 디자인 */
+@media (min-width: 768px) {
+  .featuresSection {
+    flex-direction: row;
+  }
+  .featureCard {
+    flex: 1;
+  }
+}
+
+@media (max-width: 500px) {
+  .headline {
+    font-size: 2rem;
+  }
+  .ctaHeadline {
+    font-size: 1.5rem;
+  }
+}

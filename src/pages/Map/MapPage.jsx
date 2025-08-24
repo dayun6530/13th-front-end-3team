@@ -1,8 +1,8 @@
 // src/pages/Map/MapPage.jsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./MapPage.css";
-import { useNavigate } from "react-router-dom";
-import api from "../../api/axios"; // 서버가 없어도 try/catch로 안전 처리됨
+import { useNavigate, Link } from "react-router-dom";
+import instance from "../../api/axios"; //
 
 // ------- 상수/매핑 -------
 const CHARGER_TYPE_FILTERS = [
@@ -36,7 +36,7 @@ const slugify = (s) =>
     .trim()
     .toLowerCase()
     .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9\-]/g, "");
+    .replace(/[^a-z0-9]/g, "");
 
 const getPlaceId = (p) =>
   p?.id
@@ -61,35 +61,23 @@ const savePlaceMeta = (p) => {
 export const MapPage = () => {
   // ------- 상태 -------
   const [isChargerMode, setIsChargerMode] = useState(true);
-  const [selectedAmenityDetails, setSelectedAmenityDetails] = useState(null); // { ...place, __ctx: 'station' | 'biz' }
-
-  // ✅ 필터 패널이 열릴 때의 모드 스냅샷(패널이 열려있는 동안 고정)
-  const [filterCtx, setFilterCtx] = useState("charger"); // 'charger' | 'amenity'
-
-  // 필터(선택 중)
+  const [selectedAmenityDetails, setSelectedAmenityDetails] = useState(null);
+  const [filterCtx, setFilterCtx] = useState("charger");
   const [selectedChargerFilters, setSelectedChargerFilters] = useState([]);
   const [selectedAmenityFilters, setSelectedAmenityFilters] = useState([]);
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
-
-  // 필터(적용된)
   const [appliedChargerFilters, setAppliedChargerFilters] = useState([]);
   const [appliedAmenityFilters, setAppliedAmenityFilters] = useState([]);
   const [appliedShowAvailableOnly, setAppliedShowAvailableOnly] =
     useState(false);
-
   const [searchQuery, setSearchQuery] = useState("");
-
-  // refs
   const mapContainerRef = useRef(null);
   const mapInstance = useRef(null);
   const markersRef = useRef([]);
-
-  // UI 토글
   const [filterOpen, setFilterOpen] = useState(false);
   const searchGroupRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
-
   const navigate = useNavigate();
 
   // ------- 마커 공통 함수 -------
@@ -98,7 +86,6 @@ export const MapPage = () => {
     markersRef.current = [];
   };
 
-  // 상단 state들 근처에 추가
   const [likeCount, setLikeCount] = useState(0);
   const [isLiking, setIsLiking] = useState(false);
 
@@ -117,7 +104,6 @@ export const MapPage = () => {
     }
   }, [selectedAmenityDetails]);
 
-  // map shape: 'charger' | 'amenity'
   const addMarkers = useCallback((map, places, ctx, shape) => {
     if (!window.kakao) return;
     const kakao = window.kakao.maps;
@@ -161,10 +147,10 @@ export const MapPage = () => {
           neLat: ne.getLat(),
           neLng: ne.getLng(),
           chgerType: chgerTypeParam,
-          stat: appliedShowAvailableOnly ? "2" : undefined, // 2: 사용가능
+          stat: appliedShowAvailableOnly ? "2" : undefined,
         };
 
-        const res = await api.get("/api/map", { params });
+        const res = await instance.get("/api/map", { params }); // ✅ instance 사용
         addMarkers(map, res.data || [], "station", "charger");
       } catch (e) {
         console.error("충전소 불러오기 실패:", e);
@@ -248,7 +234,6 @@ export const MapPage = () => {
   };
 
   // ------- 필터 -------
-  // ✅ 하나만 선택: 주변 상권(type === 'amenity')은 단일 선택, 충전소는 다중 선택 유지
   const handleFilterToggle = (type, value) => {
     if (type === "amenity") {
       setSelectedAmenityFilters((prev) => (prev[0] === value ? [] : [value]));
@@ -261,19 +246,13 @@ export const MapPage = () => {
     }
   };
 
-  // ✅ 적용은 filterCtx 기준으로(패널을 열었을 때의 모드)
-  // ✅ applyFilters 교체
   const applyFilters = () => {
     if (filterCtx === "charger") {
-      // 충전소 필터 적용
       setAppliedChargerFilters([...selectedChargerFilters]);
       setAppliedShowAvailableOnly(!!showAvailableOnly);
-      // 반대 모드 칩 비우기
       setAppliedAmenityFilters([]);
     } else {
-      // 상권 필터 적용
       setAppliedAmenityFilters([...selectedAmenityFilters]);
-      // 반대 모드 칩 비우기
       setAppliedChargerFilters([]);
       setAppliedShowAvailableOnly(false);
     }
@@ -300,8 +279,6 @@ export const MapPage = () => {
     navigate(`/reviews/${pid}`);
   };
 
-  // 좋아요(로컬) + 서버가 있으면 함께 시도
-  //const [likeCount, setLikeCount] = useState(0);
   useEffect(() => {
     if (!selectedAmenityDetails) return;
     const pid = getPlaceId(selectedAmenityDetails);
@@ -309,7 +286,6 @@ export const MapPage = () => {
     setLikeCount(Number.isNaN(stored) ? 0 : stored);
   }, [selectedAmenityDetails]);
 
-  // 기존 handleLikeClick 대체
   const incLocalLike = (pid, nextCount) => {
     const next = typeof nextCount === "number" ? nextCount : likeCount + 1;
     localStorage.setItem(`likes:${pid}`, String(next));
@@ -326,15 +302,13 @@ export const MapPage = () => {
     setIsLiking(true);
     try {
       if (selectedAmenityDetails.__ctx === "station") {
-        // 🔗 백엔드 연동: 충전소 좋아요
-        const { data } = await api.post(`/api/map/${pid}/like`);
+        const { data } = await instance.post(`/api/map/${pid}/like`); // ✅ instance 사용
         if (data && typeof data.likes === "number") {
-          incLocalLike(pid, data.likes); // 서버 값으로 동기화
+          incLocalLike(pid, data.likes);
         } else {
-          incLocalLike(pid); // 응답 형식 모를 때 폴백
+          incLocalLike(pid);
         }
       } else {
-        // 주변 상권은 서버 연동 없이 로컬만
         incLocalLike(pid);
       }
     } catch (e) {
@@ -376,13 +350,10 @@ export const MapPage = () => {
     return () => document.removeEventListener("mousedown", onDoc);
   }, [menuOpen]);
 
-  // 적용된 칩 존재 여부
-  // ✅ hasAnyApplied 교체
   const hasAnyApplied = isChargerMode
     ? appliedChargerFilters.length > 0 || appliedShowAvailableOnly
     : appliedAmenityFilters.length > 0;
 
-  // 팝업 컨텍스트
   const popupCtx =
     selectedAmenityDetails?.__ctx || (isChargerMode ? "station" : "biz");
 
@@ -407,7 +378,6 @@ export const MapPage = () => {
               aria-label="필터 열기"
               aria-expanded={filterOpen}
               onClick={() => {
-                // ✅ 패널을 여는 순간의 모드를 스냅샷해 유지
                 setFilterCtx(isChargerMode ? "charger" : "amenity");
                 setFilterOpen((v) => !v);
               }}
@@ -437,7 +407,6 @@ export const MapPage = () => {
             </button>
           </div>
 
-          {/* ✅ 칩 오버레이 교체 */}
           {hasAnyApplied && (
             <div className="applied-chips-overlay">
               <div className="chips" style={{ flexWrap: "wrap", gap: 8 }}>
@@ -465,7 +434,6 @@ export const MapPage = () => {
             </div>
           )}
 
-          {/* 필터 팝다운 — ✅ filterCtx 기준으로 고정 렌더 */}
           <div className={`filter-popdown ${filterOpen ? "open" : ""}`}>
             <div className="pop-inner">
               <div className="pop-title">
@@ -581,24 +549,9 @@ export const MapPage = () => {
           </button>
           {menuOpen && (
             <div className="menu-dropdown">
-              <button
-                className="menu-item-button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  navigate("/");
-                }}
-              >
+              <Link to="/home" className="menu-item">
                 홈페이지
-              </button>
-              <button
-                className="menu-item-button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  navigate("/mypage");
-                }}
-              >
-                마이페이지
-              </button>
+              </Link>
             </div>
           )}
         </div>
@@ -649,7 +602,6 @@ export const MapPage = () => {
                 </button>
               </div>
 
-              {/* 충전소일 때만 추가 정보 표시 */}
               {popupCtx === "station" && (
                 <div className="amenity-info-grid">
                   <div className="amenity-info-item">
@@ -683,7 +635,6 @@ export const MapPage = () => {
                 </div>
               )}
 
-              {/* 좋아요 버튼(항상 노출) */}
               <button className="recommend-button" onClick={handleLikeClick}>
                 <span className="heart-ic" style={{ marginRight: 6 }}>
                   ❤️
@@ -691,7 +642,6 @@ export const MapPage = () => {
                 좋아요
               </button>
 
-              {/* 리뷰 버튼: 충전소일 때만 노출 */}
               {popupCtx === "station" && (
                 <div
                   style={{

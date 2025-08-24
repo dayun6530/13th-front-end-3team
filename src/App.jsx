@@ -7,6 +7,7 @@ import { ReviewPage } from "./pages/Review/Review"; // 작성
 import { ReviewListPage } from "./pages/Review/ReviewList"; // 목록
 import { ReviewDetailPage } from "./pages/Review/ReviewDetail"; // 상세
 import "./components/GlobalStyles/GlobalStyles.css";
+import HomePage from "./pages/Home/HomePage";
 
 function App() {
   // ✅ 데모용 리뷰 5개를 특정 장소(charger-mju)에만 주입
@@ -97,6 +98,8 @@ function App() {
           path="/reviews/:placeId/:reviewId"
           element={<ReviewDetailPage />}
         />
+        {/* 홈페이지 추가 */}
+        <Route path="/home" element={<HomePage />} />
       </Routes>
     </Router>
   );

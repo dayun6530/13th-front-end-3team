@@ -193,6 +193,9 @@
   display: grid;
   gap: 8px;
   z-index: 1001;
+  /* display: flex; */
+  flex-direction: column;
+  align-items: center;
 }
 .menu-item-button {
   width: 100%;
@@ -213,6 +216,22 @@
   transform: translateY(1px);
 }
 
+/* 메뉴 상단 바 "홈페이지" 글자 */
+.menu-item {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 400;
+  background: transparent;
+  transition: background-color 0.12s ease;
+  display: block;
+}
+
+.menu-item:active {
+  background: #e9eef3; /* 클릭하면 더 진한 색으로 변함 */
+}
 /* ===== Filter Popdown ===== */
 .filter-popdown {
   position: absolute;
